@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Auto Clicker</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>自动点击器</h1>
+
+      <section class="site-box">
+        <div class="label">当前网站</div>
+        <div id="site" class="site-value">-</div>
+      </section>
+
+      <label class="field">
+        <span>CSS 选择器</span>
+        <input id="selector" type="text" placeholder="例如: button.buy-now" />
+      </label>
+
+      <label class="field">
+        <span>间隔 (ms)</span>
+        <input id="interval" type="number" min="100" step="10" value="1000" />
+      </label>
+
+      <label class="field">
+        <span>点击方式</span>
+        <select id="clickMode">
+          <option value="auto" selected>自动兜底</option>
+        </select>
+      </label>
+
+      <div class="actions">
+        <button id="saveBtn" class="secondary">保存配置</button>
+        <button id="testBtn" class="secondary">测试元素</button>
+      </div>
+
+      <div class="actions">
+        <button id="startBtn" class="primary">开始</button>
+        <button id="stopBtn" class="danger">停止</button>
+      </div>
+
+      <section class="status-box">
+        <div class="label">状态</div>
+        <div id="status">未运行</div>
+      </section>
+
+      <section class="log-box">
+        <div class="label">日志（最多 50 条）</div>
+        <div id="logs" class="logs"></div>
+      </section>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>
