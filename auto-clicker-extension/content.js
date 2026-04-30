@@ -62,9 +62,29 @@ function doClick(el, clickMode) {
   el.click();
 }
 
+function querySelectorShadowDom(selector, root = document) {
+  try {
+    const el = root.querySelector(selector);
+    if (el) return el;
+  } catch (e) {
+    // If selector is invalid, let the outer try/catch handle it
+  }
+
+  const elements = root.querySelectorAll('*');
+  for (const el of elements) {
+    if (el.shadowRoot) {
+      const found = querySelectorShadowDom(selector, el.shadowRoot);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
 function findCandidate(selector) {
   try {
-    const el = document.querySelector(selector);
+    let el = document.querySelector(selector);
+    if (!el) el = querySelectorShadowDom(selector);
+
     if (!el) return { found: false, reason: "未找到元素" };
     if (!isVisible(el)) return { found: false, reason: "元素不可见" };
     if (isDisabled(el)) return { found: false, reason: "元素为 disabled" };
