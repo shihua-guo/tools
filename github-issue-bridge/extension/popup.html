@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GitHub Issue Bridge</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="app">
+      <h1>Issue Bridge</h1>
+      <label>
+        <span>Daemon URL</span>
+        <input id="daemonUrl" type="url" placeholder="http://127.0.0.1:8765">
+      </label>
+      <label>
+        <span>Shared Secret</span>
+        <input id="sharedSecret" type="password" placeholder="secret">
+      </label>
+      <label>
+        <span>Tracked User</span>
+        <input id="trackedUser" type="text" placeholder="shihua-guo">
+      </label>
+      <label>
+        <span>Repos</span>
+        <textarea id="repos" rows="6" placeholder="shihua-guo/tools"></textarea>
+      </label>
+      <label>
+        <span>Scan Interval (minutes)</span>
+        <input id="scanIntervalMinutes" type="number" min="1" value="2">
+      </label>
+      <label class="inline">
+        <input id="enabled" type="checkbox">
+        <span>Enable scheduled scans</span>
+      </label>
+      <div class="actions">
+        <button id="save">Save</button>
+        <button id="runNow" class="secondary">Run Now</button>
+      </div>
+      <pre id="status"></pre>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

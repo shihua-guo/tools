@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "GitHub Issue Bridge",
+  "version": "0.1.0",
+  "description": "Scan GitHub issues in the browser and bridge them to a local Claude daemon.",
+  "permissions": ["alarms", "storage"],
+  "host_permissions": [
+    "https://github.com/*",
+    "http://127.0.0.1/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "GitHub Issue Bridge",
+    "default_popup": "popup.html"
+  }
+}
