@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Tab Auto Clicker",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Find and click an element in the current tab at interval.",
   "permissions": ["storage", "tabs", "scripting", "webNavigation"],
   "host_permissions": ["<all_urls>"],
@@ -15,6 +15,7 @@
       "js": ["content.js"],
       "run_at": "document_idle",
       "all_frames": true,
+      "match_origin_as_fallback": true,
       "match_about_blank": true
     }
   ]

@@ -300,7 +300,8 @@ async function onPickStart() {
     interval,
     clickMode,
     autoStart: true,
-    sessionId
+    sessionId,
+    topHost: activeHost || "-"
   });
   const okCount = results.filter((item) => item.ok && item.response && item.response.ok).length;
 

@@ -373,8 +373,8 @@ function updatePickerHighlight(target) {
   });
 }
 
-function savePickedConfig(selector, interval, clickMode) {
-  const host = window.location.host || "-";
+function savePickedConfig(selector, interval, clickMode, hostHint = "") {
+  const host = String(hostHint || window.location.host || "-").trim() || "-";
   const key = `config:${host}`;
   chrome.storage.local.get(key, (stored) => {
     const prev = stored[key] || {};
@@ -413,7 +413,7 @@ function pickElement(target) {
   stopElementPicker("已选择元素", false);
   publishPickerSessionState(sessionId, "picked", "其他 frame 已选择元素");
 
-  savePickedConfig(selector, config.interval, config.clickMode);
+  savePickedConfig(selector, config.interval, config.clickMode, config.topHost);
   addLog(`点选成功: ${selector}`);
 
   if (config.autoStart) {
@@ -428,9 +428,10 @@ function pickElement(target) {
   }
 }
 
-function startElementPicker({ interval, clickMode, autoStart, sessionId }) {
+function startElementPicker({ interval, clickMode, autoStart, sessionId, topHost }) {
   const safeInterval = Math.max(MIN_INTERVAL, Math.floor(Number(interval) || MIN_INTERVAL));
   const safeMode = clickMode || "auto";
+  const safeTopHost = String(topHost || "").trim();
 
   stopElementPicker("重新进入", false);
 
@@ -466,7 +467,8 @@ function startElementPicker({ interval, clickMode, autoStart, sessionId }) {
       interval: safeInterval,
       clickMode: safeMode,
       autoStart: Boolean(autoStart),
-      sessionId: sessionId || ""
+      sessionId: sessionId || "",
+      topHost: safeTopHost || window.location.host || "-"
     },
     onMouseMove(event) {
       const target = preferClickableTarget(getEventElement(event));
