@@ -68,6 +68,10 @@ button {
   margin-bottom: 8px;
 }
 
+.actions.single {
+  grid-template-columns: 1fr;
+}
+
 .primary {
   background: #0f766e;
   color: #fff;

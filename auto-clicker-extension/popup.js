@@ -10,6 +10,7 @@ const dom = {
   logs: document.getElementById("logs"),
   saveBtn: document.getElementById("saveBtn"),
   testBtn: document.getElementById("testBtn"),
+  pickBtn: document.getElementById("pickBtn"),
   startBtn: document.getElementById("startBtn"),
   stopBtn: document.getElementById("stopBtn")
 };
@@ -43,9 +44,39 @@ function renderLogs(logs) {
     .join("\n");
 }
 
+function isInjectableUrl(url) {
+  try {
+    const parsed = new URL(url || "");
+    return ["http:", "https:", "file:"].includes(parsed.protocol);
+  } catch (e) {
+    return false;
+  }
+}
+
+async function injectContentScript() {
+  if (!activeTabId) throw new Error("没有可用标签页");
+  const tab = await chrome.tabs.get(activeTabId);
+  if (!isInjectableUrl(tab.url)) {
+    throw new Error("当前页面不支持注入脚本，请切换到普通网页后再使用");
+  }
+  await chrome.scripting.executeScript({
+    target: { tabId: activeTabId },
+    files: ["content.js"]
+  });
+}
+
 async function sendToTab(type, payload = {}) {
   if (!activeTabId) throw new Error("没有可用标签页");
-  return chrome.tabs.sendMessage(activeTabId, { type, ...payload });
+  try {
+    return await chrome.tabs.sendMessage(activeTabId, { type, ...payload });
+  } catch (firstError) {
+    await injectContentScript();
+    try {
+      return await chrome.tabs.sendMessage(activeTabId, { type, ...payload });
+    } catch (secondError) {
+      throw new Error(secondError.message || firstError.message || "无法连接页面脚本");
+    }
+  }
 }
 
 async function getCurrentTab() {
@@ -83,10 +114,14 @@ function setStatusText(text) {
 async function refreshState() {
   try {
     const state = await sendToTab("getState");
-    setStatusText(state.running ? "运行中" : "未运行");
+    if (state.picking) {
+      setStatusText("点选中：请在页面点击目标元素");
+    } else {
+      setStatusText(state.running ? "运行中" : "未运行");
+    }
     renderLogs(state.logs || []);
   } catch (e) {
-    setStatusText("无法连接页面脚本");
+    setStatusText(e.message || "无法连接页面脚本");
     renderLogs([]);
   }
 }
@@ -123,6 +158,20 @@ async function onStart() {
   await refreshState();
 }
 
+async function onPickStart() {
+  const interval = normalizeInterval(dom.interval.value);
+  dom.interval.value = String(interval);
+  const clickMode = dom.clickMode.value || "auto";
+
+  const res = await sendToTab("startElementPicker", {
+    interval,
+    clickMode,
+    autoStart: true
+  });
+  setStatusText(res.ok ? "请在页面点击目标元素，选中后会自动开始" : `点选失败：${res.reason}`);
+  await refreshState();
+}
+
 async function onStop() {
   const res = await sendToTab("stopAutoClick", { reason: "手动停止" });
   setStatusText(res.ok ? "已停止" : `停止失败：${res.reason}`);
@@ -156,6 +205,7 @@ async function init() {
 
 dom.saveBtn.addEventListener("click", () => onSave().catch((e) => setStatusText(String(e.message || e))));
 dom.testBtn.addEventListener("click", () => onTest().catch((e) => setStatusText(String(e.message || e))));
+dom.pickBtn.addEventListener("click", () => onPickStart().catch((e) => setStatusText(String(e.message || e))));
 dom.startBtn.addEventListener("click", () => onStart().catch((e) => setStatusText(String(e.message || e))));
 dom.stopBtn.addEventListener("click", () => onStop().catch((e) => setStatusText(String(e.message || e))));
 

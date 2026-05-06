@@ -36,11 +36,11 @@ async function load() {
   els.repos.value = settings.repos.join("\n");
   els.scanIntervalMinutes.value = String(settings.scanIntervalMinutes);
   els.enabled.checked = Boolean(settings.enabled);
-  setStatus("Ready.");
+  setStatus(settings.enabled ? "Background scans are enabled." : "Ready.");
 }
 
-async function save() {
-  const settings = {
+function readFormSettings() {
+  return {
     daemonUrl: els.daemonUrl.value.trim(),
     sharedSecret: els.sharedSecret.value.trim(),
     trackedUser: els.trackedUser.value.trim(),
@@ -48,22 +48,36 @@ async function save() {
     scanIntervalMinutes: Math.max(1, Number(els.scanIntervalMinutes.value || "2")),
     enabled: els.enabled.checked
   };
-  await chrome.storage.local.set(settings);
-  await chrome.runtime.sendMessage({ type: "settingsUpdated" });
-  setStatus("Settings saved.");
 }
 
-async function runNow() {
-  setStatus("Running scan...");
-  const response = await chrome.runtime.sendMessage({ type: "runScanNow" });
+async function saveSettings(settings) {
+  await chrome.storage.local.set(settings);
+  await chrome.runtime.sendMessage({ type: "settingsUpdated" });
+}
+
+async function save() {
+  const settings = readFormSettings();
+  await saveSettings(settings);
+  setStatus(settings.enabled ? "Settings saved. Background scans are enabled." : "Settings saved. Background scans are disabled.");
+}
+
+async function startAndKeepRunning() {
+  setStatus("Starting background scans...");
+  const settings = {
+    ...readFormSettings(),
+    enabled: true
+  };
+  els.enabled.checked = true;
+  await saveSettings(settings);
+  const response = await chrome.runtime.sendMessage({ type: "startBackgroundScans" });
   if (response?.ok) {
-    setStatus(`Scan finished.\n${response.message || ""}`);
+    setStatus(`Background scans enabled.\n${response.message || ""}`);
     return;
   }
-  setStatus(`Scan failed.\n${response?.error || "Unknown error"}`);
+  setStatus(`Background start failed.\n${response?.error || "Unknown error"}`);
 }
 
 els.save.addEventListener("click", save);
-els.runNow.addEventListener("click", runNow);
+els.runNow.addEventListener("click", startAndKeepRunning);
 
 load();

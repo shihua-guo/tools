@@ -3,7 +3,7 @@
   "name": "Tab Auto Clicker",
   "version": "1.0.0",
   "description": "Find and click an element in the current tab at interval.",
-  "permissions": ["storage", "tabs"],
+  "permissions": ["storage", "tabs", "scripting"],
   "host_permissions": ["<all_urls>"],
   "action": {
     "default_popup": "popup.html",

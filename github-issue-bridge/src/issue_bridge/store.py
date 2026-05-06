@@ -37,6 +37,13 @@ class StateStore:
             state = IssueState.from_dict(raw, issue_key)
             return state
 
+    def list_issue_states(self) -> list[IssueState]:
+        with self._lock:
+            return [
+                IssueState.from_dict(raw, issue_key)
+                for issue_key, raw in self._payload["issue_states"].items()
+            ]
+
     def save_issue_state(self, state: IssueState) -> None:
         with self._lock:
             self._payload["issue_states"][state.issue_key] = state.to_dict()

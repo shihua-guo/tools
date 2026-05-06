@@ -1,0 +1,7 @@
+create vdisk file="\\192.168.2.200\data4t\VirtualData.vhdx" maximum=204800 type=expandable
+select vdisk file="\\192.168.2.200\data4t\VirtualData.vhdx"
+attach vdisk
+convert gpt
+create partition primary
+format fs=ntfs quick label="VirtualData"
+assign

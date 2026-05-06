@@ -3,7 +3,7 @@
   "name": "GitHub Issue Bridge",
   "version": "0.1.0",
   "description": "Scan GitHub issues in the browser and bridge them to a local Claude daemon.",
-  "permissions": ["alarms", "storage"],
+  "permissions": ["alarms", "storage", "scripting", "tabs"],
   "host_permissions": [
     "https://github.com/*",
     "http://127.0.0.1/*"

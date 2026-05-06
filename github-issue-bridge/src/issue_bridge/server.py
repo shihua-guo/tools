@@ -26,6 +26,9 @@ from issue_bridge.runner import ClaudeRunner
 from issue_bridge.store import StateStore
 
 
+EMPTY_RUNNER_REPLY = "处理失败，但执行器没有返回具体错误内容。请查看本地 issue bridge 日志并补充更具体的 issue 描述后重试。"
+
+
 def _parse_iso(value: str) -> datetime | None:
     if not value:
         return None
@@ -56,6 +59,7 @@ class BridgeService:
         self.runner = ClaudeRunner(cfg)
         self.task_queue: queue.Queue[str] = queue.Queue()
         self._stop = threading.Event()
+        self._recover_interrupted_work()
         self.worker = threading.Thread(target=self._worker_loop, name="issue-bridge-worker", daemon=True)
         self.worker.start()
 
@@ -82,6 +86,48 @@ class BridgeService:
             self.store.save_issue_state(state)
         return state
 
+    def _cooldown_until(self, seconds: int) -> str:
+        cooldown_deadline = datetime.now(timezone.utc).timestamp() + max(seconds, self.cfg.per_issue_cooldown_seconds)
+        return datetime.fromtimestamp(cooldown_deadline, tz=timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+    def _recover_interrupted_work(self) -> None:
+        for state in self.store.list_issue_states():
+            if state.status not in {"queued", "running"}:
+                continue
+            previous_status = state.status
+            state.status = "idle"
+            state.queued_marker = ""
+            state.last_error = f"daemon restarted while issue was {previous_status}"
+            self.store.save_issue_state(state)
+            logging.info("recovered interrupted issue %s from status=%s", state.issue_key, previous_status)
+
+    def _comment_content_without_metadata(self, body: str) -> str:
+        content = (body or "").strip()
+        if content.startswith("[AI]"):
+            content = content[len("[AI]"):].strip()
+        return content.split("<details>", 1)[0].strip()
+
+    def _has_meaningful_comment_body(self, body: str) -> bool:
+        return bool(self._comment_content_without_metadata(body))
+
+    def _format_outbox_comment(self, body: str, comment_marker: str, token: str) -> str:
+        comment_body = body.strip() or EMPTY_RUNNER_REPLY
+        if not comment_body.startswith("[AI]"):
+            comment_body = f"[AI]\n{comment_body}"
+        if token:
+            comment_body = (
+                f"{comment_body}\n\n"
+                "如确认覆盖当前本地未提交改动并继续，请直接回复：\n\n"
+                f"CONFIRM {token}\n"
+            )
+        return (
+            f"{comment_body}\n\n"
+            "<details>\n"
+            "<summary>Bridge metadata</summary>\n\n"
+            f"`{comment_marker}`\n"
+            "</details>"
+        )
+
     def _enqueue_if_needed(self, snapshot: IssueSnapshot, state: IssueState, marker: str, result: SyncResult) -> None:
         if not marker:
             return
@@ -97,18 +143,32 @@ class BridgeService:
 
     def sync_issues(self, raw_issues: list[dict]) -> SyncResult:
         result = SyncResult()
+        logging.info("sync received issues=%s", len(raw_issues))
         for raw in raw_issues:
             snapshot = IssueSnapshot.from_dict(raw)
             if not snapshot.issue_key:
                 snapshot.issue_key = f"{snapshot.repo}#{snapshot.number}"
             if snapshot.repo not in self.cfg.repos or snapshot.state.lower() != "open":
+                logging.info(
+                    "issue ignored %s reason=repo_or_state repo=%s state=%s",
+                    snapshot.issue_key,
+                    snapshot.repo,
+                    snapshot.state,
+                )
                 result.ignored_issue_keys.append(snapshot.issue_key)
                 continue
             if not has_relevant_input(snapshot, self.cfg):
+                logging.info(
+                    "issue ignored %s reason=no_tracked_user_input author=%s comments=%s",
+                    snapshot.issue_key,
+                    snapshot.author_login,
+                    len(snapshot.comments),
+                )
                 result.ignored_issue_keys.append(snapshot.issue_key)
                 continue
             marker = compute_marker(snapshot, self.cfg)
             if not marker:
+                logging.info("issue ignored %s reason=empty_marker", snapshot.issue_key)
                 result.ignored_issue_keys.append(snapshot.issue_key)
                 continue
             self.store.save_snapshot(snapshot)
@@ -122,6 +182,12 @@ class BridgeService:
             self.store.save_issue_state(state)
             result.accepted_issue_keys.append(snapshot.issue_key)
             self._enqueue_if_needed(snapshot, state, marker, result)
+        logging.info(
+            "sync result accepted=%s queued=%s ignored=%s",
+            result.accepted_issue_keys,
+            result.queued_issue_keys,
+            result.ignored_issue_keys,
+        )
         return result
 
     def list_outbox(self, limit: int) -> list[dict]:
@@ -155,6 +221,15 @@ class BridgeService:
             return
 
         item.failure_count += 1
+        if not self._has_meaningful_comment_body(item.comment_body):
+            item.comment_body = self._format_outbox_comment("", item.comment_marker, "")
+            issue_state.pending_outbox_id = item.outbox_id
+            issue_state.status = "awaiting_post"
+            issue_state.last_error = "repaired empty outbox comment body after post failure"
+            self.store.save_issue_state(issue_state)
+            self.store.save_outbox(item)
+            return
+
         issue_state.last_error = failure_reason or f"comment post failed for {github_comment_url or item.issue_url}"
         self.store.save_issue_state(issue_state)
         self.store.save_outbox(item)
@@ -162,22 +237,7 @@ class BridgeService:
     def _make_outbox_item(self, snapshot: IssueSnapshot, body: str, next_state: str, token: str) -> OutboxItem:
         outbox_id = f"obx_{uuid.uuid4().hex[:12]}"
         comment_marker = f"issue-bridge:{outbox_id}"
-        comment_body = body.strip()
-        if not comment_body.startswith("[AI]"):
-            comment_body = f"[AI]\n{comment_body}"
-        if token:
-            comment_body = (
-                f"{comment_body}\n\n"
-                "如确认覆盖当前本地未提交改动并继续，请直接回复：\n\n"
-                f"CONFIRM {token}\n"
-            )
-        comment_body = (
-            f"{comment_body}\n\n"
-            "<details>\n"
-            "<summary>Bridge metadata</summary>\n\n"
-            f"`{comment_marker}`\n"
-            "</details>"
-        )
+        comment_body = self._format_outbox_comment(body, comment_marker, token)
         return OutboxItem(
             outbox_id=outbox_id,
             issue_key=snapshot.issue_key,
@@ -199,8 +259,21 @@ class BridgeService:
                 self._process_issue(issue_key)
             except Exception as exc:  # pragma: no cover - best-effort daemon safety
                 logging.exception("worker failed for %s: %s", issue_key, exc)
+                self._mark_worker_failure(issue_key, exc)
             finally:
                 self.task_queue.task_done()
+
+    def _mark_worker_failure(self, issue_key: str, exc: Exception) -> None:
+        try:
+            state = self.store.get_issue_state(issue_key)
+            state.status = "cooldown"
+            state.queued_marker = ""
+            state.last_run_finished_at = now_iso()
+            state.cooldown_until = self._cooldown_until(self.cfg.per_issue_cooldown_seconds)
+            state.last_error = str(exc) or exc.__class__.__name__
+            self.store.save_issue_state(state)
+        except Exception as save_exc:  # pragma: no cover - best-effort daemon safety
+            logging.exception("failed to persist worker failure for %s: %s", issue_key, save_exc)
 
     def _process_issue(self, issue_key: str) -> None:
         snapshot = self.store.get_snapshot(issue_key)
@@ -235,8 +308,7 @@ class BridgeService:
 
         if output.result_type == "failed":
             next_state = "cooldown"
-            cooldown_deadline = datetime.now(timezone.utc).timestamp() + max(output.cooldown_seconds, self.cfg.per_issue_cooldown_seconds)
-            state.cooldown_until = datetime.fromtimestamp(cooldown_deadline, tz=timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+            state.cooldown_until = self._cooldown_until(output.cooldown_seconds)
             state.last_error = output.stderr_text or output.summary or "runner failed"
         else:
             state.cooldown_until = ""

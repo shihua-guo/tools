@@ -37,9 +37,10 @@ def has_relevant_input(snapshot: IssueSnapshot, cfg: AppConfig) -> bool:
 def compute_marker(snapshot: IssueSnapshot, cfg: AppConfig) -> str:
     comments = relevant_comments(snapshot, cfg)
     if comments:
-        return comments[-1].created_at
+        latest = comments[-1]
+        return latest.created_at or latest.id or snapshot.updated_at or snapshot.created_at or snapshot.issue_key
     if snapshot.author_login == cfg.tracked_user:
-        return snapshot.created_at
+        return snapshot.created_at or snapshot.updated_at or snapshot.issue_key
     return ""
 
 

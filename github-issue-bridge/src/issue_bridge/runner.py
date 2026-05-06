@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import subprocess
 import uuid
+from typing import Any
 
 from issue_bridge.config import AppConfig
 from issue_bridge.logic import sanitize_session_name
@@ -13,6 +14,25 @@ from issue_bridge.prompt import build_followup_prompt, build_initial_prompt, out
 class ClaudeRunner:
     def __init__(self, cfg: AppConfig):
         self.cfg = cfg
+
+    def _extract_structured_payload(self, raw_payload: dict[str, Any]) -> tuple[dict[str, Any] | None, str]:
+        if isinstance(raw_payload.get("structured_output"), dict):
+            return raw_payload["structured_output"], ""
+
+        if "result_type" in raw_payload:
+            return raw_payload, ""
+
+        result_text = raw_payload.get("result")
+        if isinstance(result_text, str) and result_text.strip():
+            try:
+                parsed = json.loads(result_text)
+            except json.JSONDecodeError:
+                return None, result_text.strip()
+            if isinstance(parsed, dict):
+                return parsed, ""
+            return None, result_text.strip()
+
+        return None, ""
 
     def run(self, snapshot: IssueSnapshot, state: IssueState, new_comments) -> RunnerOutput:
         local_path = self.cfg.repo_paths.get(snapshot.repo, "")
@@ -64,15 +84,18 @@ class ClaudeRunner:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=self.cfg.claude.timeout_seconds,
         )
         stderr_text = (proc.stderr or "").strip()
+        stdout_text = (proc.stdout or "").strip()
         if proc.returncode != 0:
             return RunnerOutput(
                 result_type="failed",
                 reply_markdown=(
                     f"Claude execution failed with exit code {proc.returncode}.\n\n"
-                    f"```text\n{stderr_text or proc.stdout.strip() or '<empty>'}\n```"
+                    f"```text\n{stderr_text or stdout_text or '<empty>'}\n```"
                 ),
                 needs_confirmation=False,
                 summary="Claude execution failed",
@@ -85,13 +108,13 @@ class ClaudeRunner:
             )
 
         try:
-            payload = json.loads(proc.stdout)
-        except json.JSONDecodeError:
+            raw_payload = json.loads(stdout_text)
+        except (json.JSONDecodeError, TypeError):
             return RunnerOutput(
                 result_type="failed",
                 reply_markdown=(
                     "Claude returned output that was not valid JSON.\n\n"
-                    f"```text\n{proc.stdout.strip()[:4000] or '<empty>'}\n```"
+                    f"```text\n{stdout_text[:4000] or '<empty>'}\n```"
                 ),
                 needs_confirmation=False,
                 summary="Invalid Claude JSON output",
@@ -103,13 +126,56 @@ class ClaudeRunner:
                 stderr_text=stderr_text,
             )
 
+        if not isinstance(raw_payload, dict):
+            return RunnerOutput(
+                result_type="failed",
+                reply_markdown=(
+                    "Claude returned JSON, but it was not an object.\n\n"
+                    f"```text\n{stdout_text[:4000] or '<empty>'}\n```"
+                ),
+                needs_confirmation=False,
+                summary="Unexpected Claude JSON output",
+                session_name=session_name,
+                session_id=session_id,
+                touched_paths=[],
+                cooldown_seconds=self.cfg.per_issue_cooldown_seconds,
+                exit_code=1,
+                stderr_text=stderr_text,
+            )
+
+        payload, unstructured_result = self._extract_structured_payload(raw_payload)
+        if payload is None:
+            reply_markdown = (
+                "Claude completed, but did not return the required structured output."
+            )
+            if unstructured_result:
+                reply_markdown = f"{reply_markdown}\n\n```text\n{unstructured_result[:4000]}\n```"
+            return RunnerOutput(
+                result_type="failed",
+                reply_markdown=reply_markdown,
+                needs_confirmation=False,
+                summary="Missing structured Claude output",
+                session_name=session_name,
+                session_id=str(raw_payload.get("session_id", session_id)),
+                touched_paths=[],
+                cooldown_seconds=self.cfg.per_issue_cooldown_seconds,
+                exit_code=1,
+                stderr_text=stderr_text,
+            )
+
+        result_type = str(payload.get("result_type", "failed"))
+        reply_markdown = str(payload.get("reply_markdown", ""))
+        summary = str(payload.get("summary", ""))
+        if not reply_markdown and result_type == "failed":
+            reply_markdown = summary or "Claude returned a failed result without a reply body."
+
         return RunnerOutput(
-            result_type=str(payload.get("result_type", "failed")),
-            reply_markdown=str(payload.get("reply_markdown", "")),
+            result_type=result_type,
+            reply_markdown=reply_markdown,
             needs_confirmation=bool(payload.get("needs_confirmation", False)),
-            summary=str(payload.get("summary", "")),
+            summary=summary,
             session_name=str(payload.get("session_name", session_name)),
-            session_id=session_id,
+            session_id=str(raw_payload.get("session_id", session_id)),
             touched_paths=[str(item) for item in payload.get("touched_paths", [])],
             cooldown_seconds=int(payload.get("cooldown_seconds", self.cfg.per_issue_cooldown_seconds)),
             exit_code=0,

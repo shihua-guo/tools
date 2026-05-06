@@ -7,6 +7,8 @@ let timerId = null;
 let lastFoundAt = 0;
 let currentConfig = null;
 let clickCount = 0;
+let pickerState = null;
+let directTargetElement = null;
 const logs = [];
 
 function addLog(message) {
@@ -80,29 +82,143 @@ function querySelectorShadowDom(selector, root = document) {
   return null;
 }
 
+function querySelectorAllShadowDom(selector, root = document, matches = []) {
+  const elements = root.querySelectorAll(selector);
+  for (const el of elements) matches.push(el);
+
+  const allElements = root.querySelectorAll("*");
+  for (const el of allElements) {
+    if (el.shadowRoot) {
+      querySelectorAllShadowDom(selector, el.shadowRoot, matches);
+    }
+  }
+  return matches;
+}
+
+function cssEscape(value) {
+  const text = String(value);
+  if (window.CSS && typeof window.CSS.escape === "function") {
+    return window.CSS.escape(text);
+  }
+  return text.replace(/[^a-zA-Z0-9_-]/g, "\\$&");
+}
+
+function attrEscape(value) {
+  return String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+function selectorMatchesTarget(selector, target) {
+  try {
+    const matches = querySelectorAllShadowDom(selector);
+    return matches.length === 1 && matches[0] === target;
+  } catch (e) {
+    return false;
+  }
+}
+
+function tagName(el) {
+  return el.tagName.toLowerCase();
+}
+
+function meaningfulClassNames(el) {
+  return Array.from(el.classList || [])
+    .filter((name) => name && !/^active$|^focus$|^hover$|^selected$/.test(name))
+    .slice(0, 3);
+}
+
+function nthOfTypeSegment(el) {
+  let index = 1;
+  let sibling = el.previousElementSibling;
+  while (sibling) {
+    if (sibling.tagName === el.tagName) index += 1;
+    sibling = sibling.previousElementSibling;
+  }
+  return `${tagName(el)}:nth-of-type(${index})`;
+}
+
+function elementSelectorCandidates(el) {
+  const tag = tagName(el);
+  const candidates = [];
+
+  if (el.id) {
+    candidates.push(`#${cssEscape(el.id)}`);
+    candidates.push(`${tag}#${cssEscape(el.id)}`);
+  }
+
+  for (const attr of ["data-testid", "data-test", "data-cy", "aria-label", "name", "title", "role"]) {
+    const value = el.getAttribute(attr);
+    if (value) candidates.push(`${tag}[${attr}="${attrEscape(value)}"]`);
+  }
+
+  const classes = meaningfulClassNames(el);
+  if (classes.length > 0) {
+    candidates.push(`${tag}.${classes.map(cssEscape).join(".")}`);
+  }
+
+  candidates.push(nthOfTypeSegment(el));
+  candidates.push(tag);
+  return candidates;
+}
+
+function generateSelector(target) {
+  for (const candidate of elementSelectorCandidates(target)) {
+    if (selectorMatchesTarget(candidate, target)) return candidate;
+  }
+
+  const segments = [];
+  let el = target;
+  while (el && el instanceof Element && el !== document.documentElement) {
+    let segment = nthOfTypeSegment(el);
+    for (const candidate of elementSelectorCandidates(el)) {
+      if (selectorMatchesTarget(candidate, el)) {
+        segment = candidate;
+        break;
+      }
+    }
+
+    segments.unshift(segment);
+    const selector = segments.join(" > ");
+    if (selectorMatchesTarget(selector, target)) return selector;
+
+    el = el.parentElement;
+  }
+
+  return segments.join(" > ") || tagName(target);
+}
+
+function validateCandidateElement(el) {
+  if (!el) return { found: false, reason: "未找到元素" };
+  if (!el.isConnected) return { found: false, reason: "元素已从页面移除" };
+  if (!isVisible(el)) return { found: false, reason: "元素不可见" };
+  if (isDisabled(el)) return { found: false, reason: "元素为 disabled" };
+  return { found: true, el };
+}
+
 function findCandidate(selector) {
   try {
     let el = document.querySelector(selector);
     if (!el) el = querySelectorShadowDom(selector);
 
-    if (!el) return { found: false, reason: "未找到元素" };
-    if (!isVisible(el)) return { found: false, reason: "元素不可见" };
-    if (isDisabled(el)) return { found: false, reason: "元素为 disabled" };
-    return { found: true, el };
+    return validateCandidateElement(el);
   } catch (e) {
     return { found: false, reason: `选择器无效: ${e.message}` };
   }
 }
 
+function findDirectTargetCandidate() {
+  return validateCandidateElement(directTargetElement);
+}
+
 function stopAutoClickInternal(reason) {
   running = false;
+  directTargetElement = null;
   clearTimer();
   addLog(`停止: ${reason}`);
 }
 
 function tick() {
   if (!running || !currentConfig) return;
-  const result = findCandidate(currentConfig.selector);
+  const result = directTargetElement ? findDirectTargetCandidate() : findCandidate(currentConfig.selector);
   if (result.found) {
     lastFoundAt = Date.now();
     doClick(result.el, currentConfig.clickMode);
@@ -118,16 +234,16 @@ function tick() {
   }
 }
 
-function startAutoClick({ selector, interval, clickMode }) {
+function startAutoClick({ selector, interval, clickMode }, directTarget = null) {
   const safeSelector = String(selector || "").trim();
   const safeInterval = Math.max(MIN_INTERVAL, Math.floor(Number(interval) || MIN_INTERVAL));
   const safeMode = clickMode || "auto";
 
-  if (!safeSelector) {
+  if (!safeSelector && !directTarget) {
     return { ok: false, reason: "选择器不能为空" };
   }
 
-  const probe = findCandidate(safeSelector);
+  const probe = directTarget ? validateCandidateElement(directTarget) : findCandidate(safeSelector);
   if (!probe.found && String(probe.reason || "").startsWith("选择器无效")) {
     addLog(`启动失败: ${probe.reason}`);
     return { ok: false, reason: probe.reason };
@@ -138,13 +254,15 @@ function startAutoClick({ selector, interval, clickMode }) {
   currentConfig = {
     selector: safeSelector,
     interval: safeInterval,
-    clickMode: safeMode
+    clickMode: safeMode,
+    directTarget: Boolean(directTarget)
   };
+  directTargetElement = directTarget || null;
   clickCount = 0;
   lastFoundAt = Date.now();
   timerId = setInterval(tick, safeInterval);
 
-  addLog(`开始: selector="${safeSelector}", interval=${safeInterval}ms`);
+  addLog(`开始: selector="${safeSelector}", interval=${safeInterval}ms${directTarget ? ", directTarget=true" : ""}`);
   if (!probe.found) addLog(`启动时未找到: ${probe.reason}`);
   tick();
   return { ok: true };
@@ -164,6 +282,183 @@ function testSelector(selector) {
     result.el.style.outline = prev;
   }, 1000);
   addLog(`测试成功: ${safeSelector}`);
+  return { ok: true };
+}
+
+function createPickerNode(tag, className, styles, text) {
+  const node = document.createElement(tag);
+  node.className = className;
+  Object.assign(node.style, styles);
+  if (text) node.textContent = text;
+  document.documentElement.appendChild(node);
+  return node;
+}
+
+function isPickerNode(el) {
+  return Boolean(el && el.closest && el.closest(".auto-clicker-picker-ui"));
+}
+
+function getEventElement(event) {
+  const path = typeof event.composedPath === "function" ? event.composedPath() : [];
+  for (const item of path) {
+    if (item instanceof Element && !isPickerNode(item)) return item;
+  }
+  return event.target instanceof Element && !isPickerNode(event.target) ? event.target : null;
+}
+
+function preferClickableTarget(el) {
+  if (!el || !el.closest) return el;
+  return el.closest([
+    "button",
+    "a[href]",
+    "input",
+    "select",
+    "textarea",
+    "summary",
+    "[role='button']",
+    "[role='link']",
+    "[onclick]",
+    "[tabindex]"
+  ].join(",")) || el;
+}
+
+function updatePickerHighlight(target) {
+  if (!pickerState || !target) return;
+  const rect = target.getBoundingClientRect();
+  Object.assign(pickerState.highlight.style, {
+    display: rect.width > 0 && rect.height > 0 ? "block" : "none",
+    left: `${rect.left}px`,
+    top: `${rect.top}px`,
+    width: `${rect.width}px`,
+    height: `${rect.height}px`
+  });
+}
+
+function savePickedConfig(selector, interval, clickMode) {
+  const host = window.location.host || "-";
+  const key = `config:${host}`;
+  chrome.storage.local.get(key, (stored) => {
+    const prev = stored[key] || {};
+    chrome.storage.local.set({
+      [key]: {
+        ...prev,
+        selector,
+        interval,
+        clickMode
+      }
+    });
+  });
+}
+
+function stopElementPicker(reason, log = true) {
+  if (!pickerState) return;
+
+  document.removeEventListener("mousemove", pickerState.onMouseMove, true);
+  document.removeEventListener("click", pickerState.onClick, true);
+  document.removeEventListener("keydown", pickerState.onKeyDown, true);
+  window.removeEventListener("scroll", pickerState.onViewportChange, true);
+  window.removeEventListener("resize", pickerState.onViewportChange, true);
+
+  pickerState.highlight.remove();
+  pickerState.tip.remove();
+  pickerState = null;
+
+  if (log) addLog(`点选模式结束: ${reason}`);
+}
+
+function pickElement(target) {
+  if (!pickerState || !target) return;
+  const config = pickerState.config;
+  const selector = generateSelector(target);
+  stopElementPicker("已选择元素", false);
+
+  savePickedConfig(selector, config.interval, config.clickMode);
+  addLog(`点选成功: ${selector}`);
+
+  if (config.autoStart) {
+    setTimeout(() => {
+      const res = startAutoClick({
+        selector,
+        interval: config.interval,
+        clickMode: config.clickMode
+      }, target);
+      if (!res.ok) addLog(`点选后启动失败: ${res.reason}`);
+    }, 50);
+  }
+}
+
+function startElementPicker({ interval, clickMode, autoStart }) {
+  const safeInterval = Math.max(MIN_INTERVAL, Math.floor(Number(interval) || MIN_INTERVAL));
+  const safeMode = clickMode || "auto";
+
+  stopElementPicker("重新进入", false);
+
+  const highlight = createPickerNode("div", "auto-clicker-picker-ui", {
+    position: "fixed",
+    zIndex: "2147483647",
+    pointerEvents: "none",
+    display: "none",
+    border: "2px solid #ef4444",
+    boxShadow: "0 0 0 999999px rgba(15, 23, 42, 0.12)",
+    borderRadius: "4px"
+  });
+  const tip = createPickerNode("div", "auto-clicker-picker-ui", {
+    position: "fixed",
+    zIndex: "2147483647",
+    left: "50%",
+    top: "12px",
+    transform: "translateX(-50%)",
+    padding: "8px 10px",
+    borderRadius: "8px",
+    background: "#111827",
+    color: "#fff",
+    font: '13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    boxShadow: "0 8px 24px rgba(0, 0, 0, 0.22)",
+    pointerEvents: "none"
+  }, autoStart ? "点击目标元素后会自动开始；按 Esc 取消" : "点击目标元素；按 Esc 取消");
+
+  pickerState = {
+    highlight,
+    tip,
+    currentTarget: null,
+    config: {
+      interval: safeInterval,
+      clickMode: safeMode,
+      autoStart: Boolean(autoStart)
+    },
+    onMouseMove(event) {
+      const target = preferClickableTarget(getEventElement(event));
+      if (!target) return;
+      pickerState.currentTarget = target;
+      updatePickerHighlight(target);
+    },
+    onClick(event) {
+      const target = pickerState.currentTarget || preferClickableTarget(getEventElement(event));
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      pickElement(target);
+    },
+    onKeyDown(event) {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      stopElementPicker("用户取消");
+    },
+    onViewportChange() {
+      if (pickerState && pickerState.currentTarget) {
+        updatePickerHighlight(pickerState.currentTarget);
+      }
+    }
+  };
+
+  document.addEventListener("mousemove", pickerState.onMouseMove, true);
+  document.addEventListener("click", pickerState.onClick, true);
+  document.addEventListener("keydown", pickerState.onKeyDown, true);
+  window.addEventListener("scroll", pickerState.onViewportChange, true);
+  window.addEventListener("resize", pickerState.onViewportChange, true);
+
+  addLog("点选模式: 请在页面中点击目标元素");
   return { ok: true };
 }
 
@@ -188,6 +483,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg.type === "getState") {
     sendResponse({
       running,
+      picking: Boolean(pickerState),
       config: currentConfig,
       logs: logs.slice()
     });
@@ -196,5 +492,20 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 
   if (msg.type === "testSelector") {
     sendResponse(testSelector(msg.selector));
+    return;
+  }
+
+  if (msg.type === "startElementPicker") {
+    sendResponse(startElementPicker(msg));
+    return;
+  }
+
+  if (msg.type === "cancelElementPicker") {
+    if (pickerState) {
+      stopElementPicker("手动取消");
+      sendResponse({ ok: true });
+    } else {
+      sendResponse({ ok: false, reason: "当前未处于点选模式" });
+    }
   }
 });

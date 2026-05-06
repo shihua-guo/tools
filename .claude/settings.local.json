@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell($PROFILE)",
+      "PowerShell(Test-Path *)",
+      "Bash(pwsh --version)",
+      "Bash(reg query *)",
+      "Bash(pwsh *)"
+    ]
+  }
+}
