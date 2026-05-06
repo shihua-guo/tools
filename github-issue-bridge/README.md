@@ -40,6 +40,7 @@ cp issue-bridge.example.json issue-bridge.json
 
 - `shared_secret`
 - `required_title_prefixes` if you only want issues such as `[hw]...` to be processed
+  Matching is case-sensitive and must be at the very start of the title.
 - `repos`
 - `repo_paths`
 - `claude.bin`
