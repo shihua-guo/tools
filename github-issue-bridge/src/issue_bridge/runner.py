@@ -76,11 +76,11 @@ class ClaudeRunner:
             cmd.extend(["--resume", session_id])
         else:
             cmd.extend(["--session-id", session_id, "--name", session_name])
-        cmd.append(prompt)
 
         proc = subprocess.run(
             cmd,
             cwd=local_path,
+            input=prompt,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,

@@ -34,6 +34,8 @@ github-issue-bridge/
 cp issue-bridge.example.json issue-bridge.json
 ```
 
+`issue-bridge.json` is local-only and ignored by git.
+
 2. Adjust:
 
 - `shared_secret`
