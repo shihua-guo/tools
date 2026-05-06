@@ -4,6 +4,7 @@
   "shared_secret": "change-me",
   "tracked_user": "shihua-guo",
   "ai_prefixes": ["[AI]"],
+  "required_title_prefixes": ["[hw]"],
   "repos": ["shihua-guo/tools"],
   "repo_paths": {
     "shihua-guo/tools": "D:\\work\\tools"

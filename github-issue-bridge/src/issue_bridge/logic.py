@@ -34,6 +34,13 @@ def has_relevant_input(snapshot: IssueSnapshot, cfg: AppConfig) -> bool:
     return bool(relevant_comments(snapshot, cfg))
 
 
+def matches_required_title_prefix(snapshot: IssueSnapshot, cfg: AppConfig) -> bool:
+    if not cfg.required_title_prefixes:
+        return True
+    title = snapshot.title or ""
+    return any(title.startswith(prefix) for prefix in cfg.required_title_prefixes)
+
+
 def compute_marker(snapshot: IssueSnapshot, cfg: AppConfig) -> str:
     comments = relevant_comments(snapshot, cfg)
     if comments:

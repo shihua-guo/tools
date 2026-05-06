@@ -17,6 +17,7 @@ from issue_bridge.logic import (
     extract_confirm_token,
     has_relevant_input,
     latest_relevant_comment,
+    matches_required_title_prefix,
     make_confirmation_token,
     new_relevant_comments_since,
     now_iso,
@@ -154,6 +155,15 @@ class BridgeService:
                     snapshot.issue_key,
                     snapshot.repo,
                     snapshot.state,
+                )
+                result.ignored_issue_keys.append(snapshot.issue_key)
+                continue
+            if not matches_required_title_prefix(snapshot, self.cfg):
+                logging.info(
+                    "issue ignored %s reason=title_prefix_mismatch title=%r prefixes=%s",
+                    snapshot.issue_key,
+                    snapshot.title,
+                    self.cfg.required_title_prefixes,
                 )
                 result.ignored_issue_keys.append(snapshot.issue_key)
                 continue

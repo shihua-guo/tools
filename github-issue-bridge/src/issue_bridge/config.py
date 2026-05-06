@@ -26,6 +26,7 @@ class AppConfig:
     shared_secret: str
     tracked_user: str
     ai_prefixes: list[str]
+    required_title_prefixes: list[str]
     repos: list[str]
     repo_paths: dict[str, str]
     state_dir: str
@@ -57,6 +58,15 @@ def _require_list(raw: dict, key: str) -> list[str]:
     raise ConfigError(f"Missing required string list config: {key}")
 
 
+def _optional_list(raw: dict, key: str) -> list[str]:
+    value = raw.get(key)
+    if value is None:
+        return []
+    if isinstance(value, list) and all(isinstance(item, str) for item in value):
+        return [item for item in value if item]
+    raise ConfigError(f"Invalid optional string list config: {key}")
+
+
 def _require_dict(raw: dict, key: str) -> dict:
     value = raw.get(key)
     if isinstance(value, dict):
@@ -76,6 +86,7 @@ def load_config(path: str | os.PathLike[str]) -> AppConfig:
         shared_secret=_require_str(raw, "shared_secret"),
         tracked_user=_require_str(raw, "tracked_user"),
         ai_prefixes=_require_list(raw, "ai_prefixes"),
+        required_title_prefixes=_optional_list(raw, "required_title_prefixes"),
         repos=_require_list(raw, "repos"),
         repo_paths={str(key): str(value) for key, value in _require_dict(raw, "repo_paths").items()},
         state_dir=_require_str(raw, "state_dir"),

@@ -10,6 +10,7 @@ It consists of:
 ## Current scope
 
 - scans open issues authored or commented on by `tracked_user`
+- optionally requires issue titles to start with configured prefixes such as `[hw]`
 - only treats `tracked_user` non-`[AI]` content as user input
 - maintains a per-issue Claude session
 - queues a single local worker
@@ -36,6 +37,7 @@ cp issue-bridge.example.json issue-bridge.json
 2. Adjust:
 
 - `shared_secret`
+- `required_title_prefixes` if you only want issues such as `[hw]...` to be processed
 - `repos`
 - `repo_paths`
 - `claude.bin`
