@@ -46,6 +46,18 @@ cp issue-bridge.example.json issue-bridge.json
 PYTHONPATH=src python -m issue_bridge.main --config ./issue-bridge.json
 ```
 
+On Windows you can also double-click or run:
+
+```bat
+start-issue-bridge.bat
+```
+
+Optional custom config path:
+
+```bat
+start-issue-bridge.bat .\issue-bridge.json
+```
+
 4. Health check:
 
 ```bash
