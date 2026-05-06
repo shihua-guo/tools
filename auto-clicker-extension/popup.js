@@ -1,5 +1,6 @@
 const DEFAULT_INTERVAL = 1000;
 const MIN_INTERVAL = 100;
+const LOG_LIMIT = 50;
 
 const dom = {
   site: document.getElementById("site"),
@@ -40,7 +41,10 @@ function renderLogs(logs) {
     return;
   }
   dom.logs.textContent = logs
-    .map((x) => `[${fmtTime(x.ts)}] ${x.message}`)
+    .map((x) => {
+      const framePrefix = x.frameLabel ? `[${x.frameLabel}] ` : "";
+      return `[${fmtTime(x.ts)}] ${framePrefix}${x.message}`;
+    })
     .join("\n");
 }
 
@@ -53,30 +57,131 @@ function isInjectableUrl(url) {
   }
 }
 
-async function injectContentScript() {
+async function injectContentScript(frameIds = null) {
   if (!activeTabId) throw new Error("没有可用标签页");
   const tab = await chrome.tabs.get(activeTabId);
   if (!isInjectableUrl(tab.url)) {
     throw new Error("当前页面不支持注入脚本，请切换到普通网页后再使用");
   }
+
+  const target = frameIds && frameIds.length > 0
+    ? { tabId: activeTabId, frameIds }
+    : { tabId: activeTabId, allFrames: true };
+
   await chrome.scripting.executeScript({
-    target: { tabId: activeTabId },
+    target,
     files: ["content.js"]
   });
 }
 
-async function sendToTab(type, payload = {}) {
+async function getFrameIds() {
+  if (!activeTabId) throw new Error("没有可用标签页");
+
+  const frames = await chrome.webNavigation.getAllFrames({ tabId: activeTabId });
+  const frameIds = (frames || [])
+    .map((frame) => frame.frameId)
+    .filter((frameId) => Number.isInteger(frameId));
+
+  if (!frameIds.includes(0)) frameIds.unshift(0);
+  return Array.from(new Set(frameIds)).sort((a, b) => a - b);
+}
+
+async function sendToFrame(frameId, type, payload = {}) {
   if (!activeTabId) throw new Error("没有可用标签页");
   try {
-    return await chrome.tabs.sendMessage(activeTabId, { type, ...payload });
+    return await chrome.tabs.sendMessage(activeTabId, { type, ...payload }, { frameId });
   } catch (firstError) {
-    await injectContentScript();
+    await injectContentScript([frameId]);
     try {
-      return await chrome.tabs.sendMessage(activeTabId, { type, ...payload });
+      return await chrome.tabs.sendMessage(activeTabId, { type, ...payload }, { frameId });
     } catch (secondError) {
       throw new Error(secondError.message || firstError.message || "无法连接页面脚本");
     }
   }
+}
+
+async function sendToFrames(type, payload = {}) {
+  const frameIds = await getFrameIds();
+  const results = [];
+
+  for (const frameId of frameIds) {
+    try {
+      const response = await sendToFrame(frameId, type, payload);
+      results.push({ frameId, ok: true, response });
+    } catch (e) {
+      results.push({ frameId, ok: false, error: e.message || String(e) });
+    }
+  }
+
+  return results;
+}
+
+function firstResultMessage(results, fallback) {
+  for (const item of results) {
+    if (!item.ok && item.error) return item.error;
+    if (item.ok && item.response && item.response.reason) return item.response.reason;
+  }
+  return fallback;
+}
+
+function mergeLogs(states) {
+  const merged = [];
+
+  for (const state of states) {
+    const frameLabel = state.frameLabel || (state.frameId === 0 ? "top" : `iframe:${state.frameId}`);
+    for (const entry of state.logs || []) {
+      merged.push({
+        ...entry,
+        frameLabel
+      });
+    }
+  }
+
+  merged.sort((a, b) => a.ts - b.ts);
+  return merged.slice(-LOG_LIMIT);
+}
+
+async function locateSelectorFrame(selector) {
+  const results = await sendToFrames("probeSelector", { selector });
+  let invalidReason = "";
+  let firstReason = "";
+
+  for (const item of results) {
+    if (!item.ok) {
+      if (!firstReason) firstReason = item.error;
+      continue;
+    }
+
+    const response = item.response || {};
+    if (response.ok) {
+      return { ok: true, frameId: item.frameId };
+    }
+
+    if (!invalidReason && String(response.reason || "").startsWith("选择器无效")) {
+      invalidReason = response.reason;
+    }
+    if (!firstReason && response.reason) {
+      firstReason = response.reason;
+    }
+  }
+
+  return { ok: false, reason: invalidReason || firstReason || "未找到元素" };
+}
+
+async function collectFrameStates() {
+  const results = await sendToFrames("getState");
+  const states = results
+    .filter((item) => item.ok && item.response)
+    .map((item) => ({
+      frameId: item.frameId,
+      ...item.response
+    }));
+
+  return { states, results };
+}
+
+function createPickerSessionId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 async function getCurrentTab() {
@@ -113,13 +218,24 @@ function setStatusText(text) {
 
 async function refreshState() {
   try {
-    const state = await sendToTab("getState");
-    if (state.picking) {
+    const { states, results } = await collectFrameStates();
+
+    if (states.length === 0) {
+      setStatusText(firstResultMessage(results, "无法连接页面脚本"));
+      renderLogs([]);
+      return;
+    }
+
+    const hasRunning = states.some((state) => state.running);
+    const hasPicking = states.some((state) => state.picking);
+
+    if (hasPicking) {
       setStatusText("点选中：请在页面点击目标元素");
     } else {
-      setStatusText(state.running ? "运行中" : "未运行");
+      setStatusText(hasRunning ? "运行中" : "未运行");
     }
-    renderLogs(state.logs || []);
+
+    renderLogs(mergeLogs(states));
   } catch (e) {
     setStatusText(e.message || "无法连接页面脚本");
     renderLogs([]);
@@ -137,7 +253,15 @@ async function onTest() {
     setStatusText("请先填写选择器");
     return;
   }
-  const res = await sendToTab("testSelector", { selector });
+
+  const located = await locateSelectorFrame(selector);
+  if (!located.ok) {
+    setStatusText(`测试失败：${located.reason}`);
+    await refreshState();
+    return;
+  }
+
+  const res = await sendToFrame(located.frameId, "testSelector", { selector });
   setStatusText(res.ok ? "测试成功：元素可点击" : `测试失败：${res.reason}`);
   await refreshState();
 }
@@ -148,12 +272,20 @@ async function onStart() {
     setStatusText("请先填写选择器");
     return;
   }
+
   const interval = normalizeInterval(dom.interval.value);
   dom.interval.value = String(interval);
   const clickMode = dom.clickMode.value || "auto";
+  const located = await locateSelectorFrame(selector);
+
+  if (!located.ok) {
+    setStatusText(`启动失败：${located.reason}`);
+    await refreshState();
+    return;
+  }
 
   await saveSiteConfig();
-  const res = await sendToTab("startAutoClick", { selector, interval, clickMode });
+  const res = await sendToFrame(located.frameId, "startAutoClick", { selector, interval, clickMode });
   setStatusText(res.ok ? "运行中" : `启动失败：${res.reason}`);
   await refreshState();
 }
@@ -162,19 +294,33 @@ async function onPickStart() {
   const interval = normalizeInterval(dom.interval.value);
   dom.interval.value = String(interval);
   const clickMode = dom.clickMode.value || "auto";
+  const sessionId = createPickerSessionId();
 
-  const res = await sendToTab("startElementPicker", {
+  const results = await sendToFrames("startElementPicker", {
     interval,
     clickMode,
-    autoStart: true
+    autoStart: true,
+    sessionId
   });
-  setStatusText(res.ok ? "请在页面点击目标元素，选中后会自动开始" : `点选失败：${res.reason}`);
+  const okCount = results.filter((item) => item.ok && item.response && item.response.ok).length;
+
+  if (okCount === 0) {
+    setStatusText(`点选失败：${firstResultMessage(results, "无法进入点选模式")}`);
+  } else {
+    setStatusText("请在页面点击目标元素，选中后会自动开始");
+  }
   await refreshState();
 }
 
 async function onStop() {
-  const res = await sendToTab("stopAutoClick", { reason: "手动停止" });
-  setStatusText(res.ok ? "已停止" : `停止失败：${res.reason}`);
+  const results = await sendToFrames("stopAutoClick", { reason: "手动停止" });
+  const stopped = results.some((item) => item.ok && item.response && item.response.ok);
+
+  if (stopped) {
+    setStatusText("已停止");
+  } else {
+    setStatusText(`停止失败：${firstResultMessage(results, "当前未运行")}`);
+  }
   await refreshState();
 }
 

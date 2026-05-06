@@ -1,6 +1,7 @@
 const LOG_LIMIT = 50;
 const MIN_INTERVAL = 100;
 const NOT_FOUND_STOP_MS = 3000;
+const PICKER_SESSION_PREFIX = "picker-session:";
 
 let running = false;
 let timerId = null;
@@ -10,6 +11,35 @@ let clickCount = 0;
 let pickerState = null;
 let directTargetElement = null;
 const logs = [];
+
+function getFrameLabel() {
+  if (window.top === window) return "top";
+  try {
+    const url = new URL(window.location.href);
+    return `iframe:${url.origin}${url.pathname}`;
+  } catch (e) {
+    return "iframe";
+  }
+}
+
+function pickerSessionKey(sessionId) {
+  return `${PICKER_SESSION_PREFIX}${sessionId}`;
+}
+
+function publishPickerSessionState(sessionId, status, reason) {
+  if (!sessionId) return;
+  const key = pickerSessionKey(sessionId);
+  chrome.storage.local.set({
+    [key]: {
+      status,
+      reason,
+      ts: Date.now()
+    }
+  });
+  setTimeout(() => {
+    chrome.storage.local.remove(key);
+  }, 5000);
+}
 
 function addLog(message) {
   logs.push({ ts: Date.now(), message });
@@ -285,6 +315,15 @@ function testSelector(selector) {
   return { ok: true };
 }
 
+function probeSelector(selector) {
+  const safeSelector = String(selector || "").trim();
+  if (!safeSelector) return { ok: false, reason: "选择器不能为空" };
+  const result = findCandidate(safeSelector);
+  return result.found
+    ? { ok: true }
+    : { ok: false, reason: result.reason };
+}
+
 function createPickerNode(tag, className, styles, text) {
   const node = document.createElement(tag);
   node.className = className;
@@ -369,8 +408,10 @@ function stopElementPicker(reason, log = true) {
 function pickElement(target) {
   if (!pickerState || !target) return;
   const config = pickerState.config;
+  const sessionId = config.sessionId;
   const selector = generateSelector(target);
   stopElementPicker("已选择元素", false);
+  publishPickerSessionState(sessionId, "picked", "其他 frame 已选择元素");
 
   savePickedConfig(selector, config.interval, config.clickMode);
   addLog(`点选成功: ${selector}`);
@@ -387,7 +428,7 @@ function pickElement(target) {
   }
 }
 
-function startElementPicker({ interval, clickMode, autoStart }) {
+function startElementPicker({ interval, clickMode, autoStart, sessionId }) {
   const safeInterval = Math.max(MIN_INTERVAL, Math.floor(Number(interval) || MIN_INTERVAL));
   const safeMode = clickMode || "auto";
 
@@ -424,7 +465,8 @@ function startElementPicker({ interval, clickMode, autoStart }) {
     config: {
       interval: safeInterval,
       clickMode: safeMode,
-      autoStart: Boolean(autoStart)
+      autoStart: Boolean(autoStart),
+      sessionId: sessionId || ""
     },
     onMouseMove(event) {
       const target = preferClickableTarget(getEventElement(event));
@@ -441,9 +483,11 @@ function startElementPicker({ interval, clickMode, autoStart }) {
     },
     onKeyDown(event) {
       if (event.key !== "Escape") return;
+      const activeSessionId = pickerState && pickerState.config ? pickerState.config.sessionId : "";
       event.preventDefault();
       event.stopPropagation();
       stopElementPicker("用户取消");
+      publishPickerSessionState(activeSessionId, "cancelled", "用户取消");
     },
     onViewportChange() {
       if (pickerState && pickerState.currentTarget) {
@@ -461,6 +505,20 @@ function startElementPicker({ interval, clickMode, autoStart }) {
   addLog("点选模式: 请在页面中点击目标元素");
   return { ok: true };
 }
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== "local" || !pickerState || !pickerState.config) return;
+  const sessionId = pickerState.config.sessionId;
+  if (!sessionId) return;
+
+  const change = changes[pickerSessionKey(sessionId)];
+  if (!change || !change.newValue) return;
+
+  const payload = change.newValue;
+  if (payload.status === "picked" || payload.status === "cancelled") {
+    stopElementPicker(payload.reason || "点选模式已结束");
+  }
+});
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (!msg || typeof msg.type !== "string") return;
@@ -485,8 +543,14 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       running,
       picking: Boolean(pickerState),
       config: currentConfig,
-      logs: logs.slice()
+      logs: logs.slice(),
+      frameLabel: getFrameLabel()
     });
+    return;
+  }
+
+  if (msg.type === "probeSelector") {
+    sendResponse(probeSelector(msg.selector));
     return;
   }
 
@@ -502,7 +566,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 
   if (msg.type === "cancelElementPicker") {
     if (pickerState) {
-      stopElementPicker("手动取消");
+      stopElementPicker(msg.reason || "手动取消");
       sendResponse({ ok: true });
     } else {
       sendResponse({ ok: false, reason: "当前未处于点选模式" });
