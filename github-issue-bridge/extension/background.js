@@ -182,7 +182,104 @@ function detectIssueState(html) {
   return "open";
 }
 
+function embeddedDataPayload(html) {
+  const match = /<script type="application\/json" data-target="react-app\.embeddedData">([\s\S]*?)<\/script>/i.exec(html);
+  if (!match) return null;
+  try {
+    return JSON.parse(match[1]);
+  } catch (_error) {
+    return null;
+  }
+}
+
+function normalizeBodyText(value) {
+  return String(value || "").replace(/\r\n/g, "\n").trim();
+}
+
+function embeddedIssueFromPayload(payload, repo, number) {
+  const queries = payload?.payload?.preloadedQueries;
+  if (!Array.isArray(queries)) return null;
+  for (const entry of queries) {
+    const repository = entry?.result?.data?.repository;
+    const issue = repository?.issue;
+    if (!issue || issue.number !== number) continue;
+    const owner = repository?.owner?.login || "";
+    const name = repository?.name || "";
+    if (!owner || !name || `${owner}/${name}` === repo) {
+      return issue;
+    }
+  }
+  return null;
+}
+
+function commentsFromTimeline(issue) {
+  const groups = [
+    ...(issue?.frontTimelineItems?.edges || []),
+    ...(issue?.backTimelineItems?.edges || [])
+  ];
+  const comments = [];
+  const seen = new Set();
+
+  for (const edge of groups) {
+    const node = edge?.node;
+    if (!node || node.__typename !== "IssueComment") continue;
+
+    const id = String(node.id || node.databaseId || "").trim();
+    const authorLogin = normalizeText(node.author?.login || "");
+    const body = normalizeBodyText(node.body);
+    const createdAt = String(node.createdAt || "").trim();
+    const commentUrl = absoluteGithubUrl(node.url || "");
+    if (!id && !authorLogin && !body) continue;
+
+    const dedupeKey = id || `${authorLogin}:${createdAt}:${body}`;
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+
+    comments.push({
+      id: id || `${comments.length + 1}`,
+      author_login: authorLogin,
+      body,
+      created_at: createdAt,
+      url: commentUrl
+    });
+  }
+
+  return comments.sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+}
+
+function labelsFromEmbeddedIssue(issue) {
+  return (issue?.labels?.edges || [])
+    .map((edge) => normalizeText(edge?.node?.name || ""))
+    .filter(Boolean);
+}
+
+function parseEmbeddedIssueDocument(repo, number, url, html) {
+  const payload = embeddedDataPayload(html);
+  const issue = embeddedIssueFromPayload(payload, repo, number);
+  if (!issue) return null;
+
+  return {
+    issue_key: `${repo}#${number}`,
+    repo,
+    number,
+    url: absoluteGithubUrl(issue.url || url),
+    title: normalizeText(issue.title || ""),
+    body: normalizeBodyText(issue.body),
+    author_login: normalizeText(issue.author?.login || ""),
+    labels: labelsFromEmbeddedIssue(issue),
+    state: String(issue.state || "OPEN").toLowerCase(),
+    created_at: String(issue.createdAt || ""),
+    updated_at: String(issue.updatedAt || issue.createdAt || ""),
+    comments: commentsFromTimeline(issue)
+  };
+}
+
 function parseIssueDocument(repo, number, url, html) {
+  const embeddedIssue = parseEmbeddedIssueDocument(repo, number, url, html);
+  if (embeddedIssue) {
+    return embeddedIssue;
+  }
+
   const timestamps = isoTimestamps(html);
   const fallbackCreatedAt = stableTimestamp(timestamps[0] || "", `${repo}#${number}:created`);
   const fallbackUpdatedAt = stableTimestamp(timestamps[timestamps.length - 1] || "", fallbackCreatedAt);
