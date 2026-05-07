@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import subprocess
 import uuid
 from typing import Any
@@ -9,6 +10,9 @@ from issue_bridge.config import AppConfig
 from issue_bridge.logic import sanitize_session_name
 from issue_bridge.models import IssueState, IssueSnapshot, RunnerOutput
 from issue_bridge.prompt import build_followup_prompt, build_initial_prompt, output_schema_json
+
+
+logger = logging.getLogger(__name__)
 
 
 class ClaudeRunner:
@@ -57,6 +61,17 @@ class ClaudeRunner:
             if not state.claude_session_id
             else build_followup_prompt(snapshot, self.cfg, local_path, new_comments)
         )
+        logger.info(
+            "claude run issue=%s resume=%s bin=%s cwd=%s prompt_chars=%s title=%r body=%r new_comments=%s",
+            snapshot.issue_key,
+            bool(state.claude_session_id),
+            self.cfg.claude.bin,
+            local_path,
+            len(prompt),
+            snapshot.title,
+            snapshot.body,
+            len(new_comments),
+        )
 
         cmd = [
             self.cfg.claude.bin,
@@ -90,6 +105,14 @@ class ClaudeRunner:
         )
         stderr_text = (proc.stderr or "").strip()
         stdout_text = (proc.stdout or "").strip()
+        logger.info(
+            "claude finished issue=%s exit_code=%s stdout_chars=%s stderr_chars=%s session_id=%s",
+            snapshot.issue_key,
+            proc.returncode,
+            len(stdout_text),
+            len(stderr_text),
+            session_id,
+        )
         if proc.returncode != 0:
             return RunnerOutput(
                 result_type="failed",

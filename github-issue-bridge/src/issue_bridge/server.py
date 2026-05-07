@@ -191,6 +191,14 @@ class BridgeService:
                     state.pending_confirmation_token = ""
             self.store.save_issue_state(state)
             result.accepted_issue_keys.append(snapshot.issue_key)
+            logging.info(
+                "issue accepted %s title=%r body=%r comments=%s author=%s",
+                snapshot.issue_key,
+                snapshot.title,
+                snapshot.body,
+                len(snapshot.comments),
+                snapshot.author_login,
+            )
             self._enqueue_if_needed(snapshot, state, marker, result)
         logging.info(
             "sync result accepted=%s queued=%s ignored=%s",
