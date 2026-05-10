@@ -1,0 +1,2 @@
+select vdisk file=Z:\VirtualData.vhdx
+attach vdisk

@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmd *)",
+      "Bash(diskpart *)",
+      "Bash(powershell *)",
+      "Bash(dir *)",
+      "Bash(ping *)",
+      "Bash(net use *)",
+      "Bash(net view *)",
+      "Bash(echo select *)",
+      "Bash(echo attach *)"
+    ]
+  }
+}
