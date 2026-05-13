@@ -1,0 +1,13 @@
+[project]
+name = "tg-cli-bot"
+version = "0.1.0"
+description = "Telegram Bot to control Claude Code and CodeX on Linux Server"
+requires-python = ">=3.9"
+dependencies = [
+    "python-telegram-bot>=21.0",
+    "python-dotenv>=1.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
