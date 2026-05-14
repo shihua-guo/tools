@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>自媒体封面文字工具</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">本地 WebUI</p>
+        <h1>自媒体封面文字工具</h1>
+        <p class="intro">上传竖屏和横屏图片，填写标题，生成带中文封面字的新图片。</p>
+      </div>
+      <div class="font-note">
+        当前默认字体<br>
+        <span>{{ default_font }}</span>
+      </div>
+    </section>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="alerts">
+          {% for message in messages %}
+            <p>{{ message }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form class="workspace" action="{{ url_for('generate') }}" method="post" enctype="multipart/form-data">
+      <section class="panel">
+        <h2>图片</h2>
+        <div class="upload-grid">
+          <label class="upload-box">
+            <span>竖屏图片</span>
+            <input type="file" name="vertical_image" accept="image/*">
+          </label>
+          <label class="upload-box">
+            <span>横屏图片</span>
+            <input type="file" name="horizontal_image" accept="image/*">
+          </label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>文字</h2>
+        <label>
+          主标题
+          <textarea name="title" rows="2" required>{{ form.title }}</textarea>
+        </label>
+        <label>
+          副标题
+          <input type="text" name="subtitle" value="{{ form.subtitle }}">
+        </label>
+        <label>
+          角标
+          <input type="text" name="badge" value="{{ form.badge }}">
+        </label>
+      </section>
+
+      <section class="panel controls">
+        <h2>样式</h2>
+        <div class="control-grid">
+          <label>
+            文字位置
+            <select name="position">
+              <option value="top" {% if form.position == 'top' %}selected{% endif %}>上方</option>
+              <option value="center" {% if form.position == 'center' %}selected{% endif %}>中间</option>
+              <option value="bottom" {% if form.position == 'bottom' %}selected{% endif %}>下方</option>
+            </select>
+          </label>
+          <label>
+            对齐
+            <select name="align">
+              <option value="left" {% if form.align == 'left' %}selected{% endif %}>左对齐</option>
+              <option value="center" {% if form.align == 'center' %}selected{% endif %}>居中</option>
+              <option value="right" {% if form.align == 'right' %}selected{% endif %}>右对齐</option>
+            </select>
+          </label>
+          <label>
+            可读性
+            <select name="style">
+              <option value="gradient" {% if form.style == 'gradient' %}selected{% endif %}>渐变压暗</option>
+              <option value="panel" {% if form.style == 'panel' %}selected{% endif %}>半透明底板</option>
+              <option value="stroke" {% if form.style == 'stroke' %}selected{% endif %}>仅文字描边</option>
+            </select>
+          </label>
+          <label>
+            输出格式
+            <select name="output_format">
+              <option value="png" {% if form.output_format == 'png' %}selected{% endif %}>PNG</option>
+              <option value="jpg" {% if form.output_format == 'jpg' %}selected{% endif %}>JPG</option>
+            </select>
+          </label>
+          <label>
+            标题大小
+            <input type="number" name="title_size_percent" min="4" max="14" step="0.5" value="{{ form.title_size_percent }}">
+          </label>
+          <label>
+            文字颜色
+            <input type="color" name="text_color" value="{{ form.text_color }}">
+          </label>
+          <label>
+            角标颜色
+            <input type="color" name="accent_color" value="{{ form.accent_color }}">
+          </label>
+          <label>
+            自定义字体
+            <input type="file" name="font_file" accept=".ttf,.ttc,.otf">
+          </label>
+        </div>
+        <button class="primary" type="submit">生成封面</button>
+      </section>
+    </form>
+
+    {% if results %}
+      <section class="results">
+        <div class="results-head">
+          <h2>生成结果</h2>
+          {% if zip_name %}
+            <a class="download-all" href="{{ url_for('download_file', filename=zip_name) }}">下载全部 ZIP</a>
+          {% endif %}
+        </div>
+        <div class="result-grid">
+          {% for item in results %}
+            <article class="result-card">
+              <h3>{{ item.label }}</h3>
+              <img src="{{ item.url }}" alt="{{ item.label }}">
+              <a href="{{ item.download_url }}">下载这张</a>
+            </article>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+  </main>
+</body>
+</html>

@@ -1,0 +1,9 @@
+.venv/
+uploads/*
+outputs/*
+!uploads/.gitkeep
+!outputs/.gitkeep
+__pycache__/
+*.pyc
+server.log
+server.err
