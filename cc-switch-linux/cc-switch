@@ -1,0 +1,220 @@
+#!/usr/bin/env python3
+import argparse
+import datetime as dt
+import json
+import os
+import re
+import shutil
+import sys
+from pathlib import Path
+
+
+CONFIG_DIR = Path(os.environ.get("CLAUDE_CONFIG_DIR", "~/.claude")).expanduser()
+SETTINGS = CONFIG_DIR / "settings.json"
+SWITCH_DIR = CONFIG_DIR / "cc-switch"
+PROFILES_DIR = SWITCH_DIR / "profiles"
+CURRENT = SWITCH_DIR / "current"
+BACKUP_DIR = CONFIG_DIR / "backups"
+SENSITIVE = re.compile(r"(TOKEN|KEY|SECRET|AUTH)", re.I)
+PROFILE_NAME = re.compile(r"^[A-Za-z0-9._-]+$")
+
+
+def fail(message: str, code: int = 1) -> None:
+    print(f"cc-switch: {message}", file=sys.stderr)
+    raise SystemExit(code)
+
+
+def ensure_dirs() -> None:
+    PROFILES_DIR.mkdir(parents=True, exist_ok=True)
+    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def checked_name(name: str) -> str:
+    if not name or not PROFILE_NAME.fullmatch(name):
+        fail("profile name must use only letters, numbers, dot, underscore, or dash")
+    return name
+
+
+def profile_path(name: str) -> Path:
+    return PROFILES_DIR / f"{checked_name(name)}.json"
+
+
+def read_json(path: Path, default=None):
+    if not path.exists():
+        if default is not None:
+            return default
+        fail(f"missing file: {path}")
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        fail(f"invalid JSON in {path}: {exc}")
+
+
+def write_json(path: Path, data) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    tmp.replace(path)
+
+
+def get_env_from_settings(data) -> dict:
+    env = data.get("env", {})
+    if not isinstance(env, dict):
+        fail("settings/profile has no object env")
+    return env
+
+
+def print_env(env: dict) -> None:
+    for key in sorted(env):
+        value = "[redacted]" if SENSITIVE.search(key) else env[key]
+        print(f"{key}={value}")
+
+
+def command_list(_args) -> None:
+    ensure_dirs()
+    current = CURRENT.read_text(encoding="utf-8").strip() if CURRENT.exists() else ""
+    profiles = sorted(p.stem for p in PROFILES_DIR.glob("*.json"))
+    if not profiles:
+        print("(no profiles)")
+        return
+    for name in profiles:
+        mark = "*" if name == current else " "
+        print(f"{mark} {name}")
+
+
+def command_active(_args) -> None:
+    data = read_json(SETTINGS, default={})
+    print_env(get_env_from_settings(data))
+
+
+def command_current(_args) -> None:
+    current = CURRENT.read_text(encoding="utf-8").strip() if CURRENT.exists() else ""
+    print(current or "(unknown)")
+    if SETTINGS.exists():
+        print_env(get_env_from_settings(read_json(SETTINGS)))
+
+
+def command_show(args) -> None:
+    data = read_json(profile_path(args.name))
+    print_env(get_env_from_settings(data))
+
+
+def command_import(args) -> None:
+    ensure_dirs()
+    name = checked_name(args.name)
+    source = Path(args.source).expanduser()
+    data = read_json(source)
+    env = get_env_from_settings(data)
+    write_json(profile_path(name), {"env": env})
+    print(f"imported {name} from {source}")
+
+
+def command_add(args) -> None:
+    ensure_dirs()
+    name = checked_name(args.name)
+    token = args.token
+    if args.token_stdin:
+        token = args.token_value or sys.stdin.read().strip()
+    elif args.token_value:
+        token = args.token_value
+    if not token:
+        fail("provide --token or --token-stdin")
+
+    env = {
+        "ANTHROPIC_BASE_URL": args.base_url,
+        "ANTHROPIC_AUTH_TOKEN": token,
+        "ANTHROPIC_MODEL": args.model,
+        "ANTHROPIC_DEFAULT_SONNET_MODEL": args.sonnet or args.model,
+        "ANTHROPIC_DEFAULT_OPUS_MODEL": args.opus or args.model,
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL": args.haiku or args.model,
+    }
+    if args.subagent or args.model:
+        env["CLAUDE_CODE_SUBAGENT_MODEL"] = args.subagent or args.model
+    write_json(profile_path(name), {"env": env})
+    print(f"saved {name}")
+
+
+def command_use(args) -> None:
+    ensure_dirs()
+    name = checked_name(args.name)
+    data = read_json(profile_path(name))
+    env = get_env_from_settings(data)
+
+    settings = read_json(SETTINGS, default={})
+    if SETTINGS.exists():
+        stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+        shutil.copy2(SETTINGS, BACKUP_DIR / f"settings.cc-switch-{stamp}.json")
+    settings["env"] = env
+    write_json(SETTINGS, settings)
+    CURRENT.write_text(name + "\n", encoding="utf-8")
+    print(f"using {name}")
+    print_env(env)
+
+
+def command_remove(args) -> None:
+    path = profile_path(args.name)
+    if not path.exists():
+        fail(f"missing profile: {args.name}")
+    path.unlink()
+    if CURRENT.exists() and CURRENT.read_text(encoding="utf-8").strip() == args.name:
+        CURRENT.unlink()
+    print(f"removed {args.name}")
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="cc-switch",
+        description="Switch Claude Code env profiles stored under ~/.claude/cc-switch/profiles.",
+    )
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    p = sub.add_parser("list", aliases=["ls"])
+    p.set_defaults(func=command_list)
+
+    p = sub.add_parser("active")
+    p.set_defaults(func=command_active)
+
+    p = sub.add_parser("current")
+    p.set_defaults(func=command_current)
+
+    p = sub.add_parser("show")
+    p.add_argument("name")
+    p.set_defaults(func=command_show)
+
+    p = sub.add_parser("import")
+    p.add_argument("name")
+    p.add_argument("source", nargs="?", default=str(SETTINGS))
+    p.set_defaults(func=command_import)
+
+    p = sub.add_parser("add")
+    p.add_argument("name")
+    p.add_argument("token_value", nargs="?", help=argparse.SUPPRESS)
+    p.add_argument("--base-url", required=True)
+    p.add_argument("--model", required=True)
+    token = p.add_mutually_exclusive_group(required=True)
+    token.add_argument("--token")
+    token.add_argument("--token-stdin", action="store_true")
+    p.add_argument("--haiku")
+    p.add_argument("--sonnet")
+    p.add_argument("--opus")
+    p.add_argument("--subagent")
+    p.set_defaults(func=command_add)
+
+    p = sub.add_parser("use")
+    p.add_argument("name")
+    p.set_defaults(func=command_use)
+
+    p = sub.add_parser("remove", aliases=["rm"])
+    p.add_argument("name")
+    p.set_defaults(func=command_remove)
+    return parser
+
+
+def main() -> None:
+    parser = build_parser()
+    args = parser.parse_args()
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()

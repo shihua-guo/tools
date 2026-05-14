@@ -1,0 +1,37 @@
+database:
+  host: "127.0.0.1"
+  port: 5432
+  database: "postgres"
+  username: "omm"
+  password: "change_me"
+  ssl: false
+  connectTimeoutSeconds: 5
+  queryTimeoutSeconds: 5
+
+diagnosis:
+  ddlLookbackMinutes: 20
+  keepFullSqlText: true
+
+thresholds:
+  connectionUsageWarning: 0.70
+  connectionUsageCritical: 0.90
+  longQuerySeconds: 60
+  longTransactionSeconds: 120
+  lockWaitSeconds: 10
+  idleInTransactionSeconds: 60
+  maxRowsPerCheck: 50
+
+whitelist:
+  enabled: false
+  users:
+    - "omm"
+    - "app_user"
+  clientIps:
+    - "127.0.0.1"
+    - "::1"
+    - "10.0.0.0/24"
+
+report:
+  outputDir: "reports"
+  markdown: true
+  json: true
