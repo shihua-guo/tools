@@ -57,6 +57,8 @@ On Windows you can also double-click or run:
 start-issue-bridge.bat
 ```
 
+`start.bat` is also available as a short alias for the same launcher.
+
 Optional custom config path:
 
 ```bat
