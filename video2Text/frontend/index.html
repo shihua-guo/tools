@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>video-to-text 工作台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <style>
+    .loading-dots::after {
+      content: ".";
+      animation: dots 1s steps(4, end) infinite;
+    }
+
+    @keyframes dots {
+      0%, 20% { content: "."; }
+      40% { content: ".."; }
+      60% { content: "..."; }
+      80%, 100% { content: ""; }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[radial-gradient(circle_at_top,_#1e293b,_#020617_55%)] px-4 py-6 text-slate-100 md:px-8 md:py-10">
+  <div id="app" class="mx-auto max-w-6xl space-y-6">
+    <header class="rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-black/30 backdrop-blur">
+      <p class="text-sm uppercase tracking-[0.35em] text-cyan-300">Video To Text</p>
+      <div class="mt-3 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 class="text-3xl font-semibold text-white md:text-4xl">视频转文字与可选文案生成</h1>
+          <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+            基础流程始终只做音频提取和转写。标题、封面提示词、平台文案都改成按需启用，默认关闭。
+          </p>
+        </div>
+        <div class="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 px-4 py-3 text-xs text-cyan-100">
+          当前视频目录<br>
+          <span class="mt-1 block break-all font-mono text-[11px] text-cyan-200">{{ videoRoot }}</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+      <section class="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/30 backdrop-blur">
+        <div class="flex flex-col gap-3 border-b border-white/10 pb-4 md:flex-row md:items-start md:justify-between">
+          <div>
+            <h2 class="text-xl font-semibold text-white">1. 选择视频</h2>
+            <p class="mt-1 text-sm text-slate-400">点击文件夹进入，点击文件选中。</p>
+          </div>
+          <div class="flex gap-2">
+            <button
+              @click="goUp"
+              :disabled="!currentDir"
+              class="rounded-full border border-white/10 px-3 py-1.5 text-xs text-slate-200 transition hover:border-cyan-400/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-40">
+              返回上级
+            </button>
+            <button
+              @click="fetchFiles()"
+              class="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-xs text-cyan-200 transition hover:bg-cyan-400/20">
+              刷新目录
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-4 rounded-2xl border border-white/10 bg-slate-950/70 p-3 text-xs text-slate-400">
+          <div class="font-medium text-slate-300">当前位置</div>
+          <div class="mt-2 flex flex-wrap items-center gap-2">
+            <button class="rounded-full bg-white/5 px-2.5 py-1 text-slate-200" @click="fetchFiles('')">root</button>
+            <template v-for="(crumb, index) in breadcrumbs" :key="`${crumb}-${index}`">
+              <span class="text-slate-600">/</span>
+              <button
+                class="rounded-full bg-white/5 px-2.5 py-1 text-slate-200 transition hover:bg-white/10"
+                @click="openBreadcrumb(index)">
+                {{ crumb }}
+              </button>
+            </template>
+          </div>
+        </div>
+
+        <ul class="mt-4 max-h-[28rem] space-y-2 overflow-y-auto pr-1">
+          <li
+            v-for="file in files"
+            :key="file.path"
+            @click="handleFile(file)"
+            class="cursor-pointer rounded-2xl border px-4 py-3 transition"
+            :class="file.is_dir
+              ? 'border-white/10 bg-white/[0.03] hover:border-cyan-400/35 hover:bg-cyan-400/10'
+              : selectedFile === file.path
+                ? 'border-cyan-400/70 bg-cyan-400/15 shadow-lg shadow-cyan-500/10'
+                : 'border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06]'">
+            <div class="flex items-center justify-between gap-4">
+              <div class="min-w-0">
+                <div class="flex items-center gap-3">
+                  <span class="text-lg">{{ file.is_dir ? '📁' : '🎞️' }}</span>
+                  <span class="truncate text-sm font-medium text-slate-100">{{ file.name }}</span>
+                </div>
+                <div class="mt-1 truncate pl-8 text-xs text-slate-500">{{ file.path }}</div>
+              </div>
+              <span class="shrink-0 text-xs text-slate-500">{{ file.is_dir ? '进入' : '选择' }}</span>
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <section class="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/30 backdrop-blur">
+        <h2 class="text-xl font-semibold text-white">2. 输出设置</h2>
+        <p class="mt-2 text-sm leading-6 text-slate-400">
+          始终执行：提取音频 -> ASR 转写。下面三个选项都走大语言模型，默认关闭。
+        </p>
+
+        <div class="mt-5 space-y-3">
+          <label class="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+            <input type="checkbox" checked disabled class="mt-1 h-4 w-4 rounded border-slate-600 bg-slate-900 text-cyan-400" />
+            <div>
+              <div class="text-sm font-medium text-slate-100">输出转写文字</div>
+              <div class="mt-1 text-xs text-slate-500">默认启用，使用离线 ASR，不调用大模型。</div>
+            </div>
+          </label>
+
+          <label class="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+            <input v-model="generateContent" type="checkbox" class="mt-1 h-4 w-4 rounded border-slate-600 bg-slate-900 text-cyan-400" />
+            <div>
+              <div class="text-sm font-medium text-slate-100">生成平台文案</div>
+              <div class="mt-1 text-xs text-slate-500">按风格输出整理后的正文内容。</div>
+            </div>
+          </label>
+
+          <label class="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+            <input v-model="generateTitles" type="checkbox" class="mt-1 h-4 w-4 rounded border-slate-600 bg-slate-900 text-cyan-400" />
+            <div>
+              <div class="text-sm font-medium text-slate-100">生成标题建议</div>
+              <div class="mt-1 text-xs text-slate-500">输出一组适合传播的标题备选。</div>
+            </div>
+          </label>
+
+          <label class="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+            <input v-model="generateCoverPrompt" type="checkbox" class="mt-1 h-4 w-4 rounded border-slate-600 bg-slate-900 text-cyan-400" />
+            <div>
+              <div class="text-sm font-medium text-slate-100">生成封面提示词</div>
+              <div class="mt-1 text-xs text-slate-500">输出 AI 绘图封面提示词。</div>
+            </div>
+          </label>
+        </div>
+
+        <div v-if="llmRequested" class="mt-5">
+          <div class="mb-2 text-sm font-medium text-slate-300">LLM 风格</div>
+          <div class="grid grid-cols-2 gap-2">
+            <button
+              v-for="style in styles"
+              :key="style"
+              @click="selectedStyle = style"
+              class="rounded-2xl px-3 py-2 text-sm transition"
+              :class="selectedStyle === style
+                ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20'
+                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'">
+              {{ style }}
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-5 rounded-2xl border border-white/10 bg-slate-950/70 p-4">
+          <div class="text-xs uppercase tracking-[0.25em] text-slate-500">Selected File</div>
+          <div class="mt-2 break-all text-sm text-slate-200">{{ selectedFile || '请先从左侧选择视频文件' }}</div>
+        </div>
+
+        <button
+          @click="startProcess"
+          :disabled="!selectedFile || isProcessing"
+          class="mt-5 w-full rounded-2xl bg-cyan-400 px-4 py-3 font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500">
+          <span v-if="isProcessing" class="loading-dots">处理中</span>
+          <span v-else>开始处理</span>
+        </button>
+
+        <div v-if="message" class="mt-4 rounded-2xl px-4 py-3 text-sm" :class="messageClass">
+          {{ message }}
+        </div>
+
+        <div v-if="currentTask" class="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-xs text-slate-400">
+          <div>任务状态：<span class="font-medium text-slate-200">{{ currentTask.status }}</span></div>
+          <div class="mt-1 break-all">任务 ID：{{ currentTask.task_id }}</div>
+          <a
+            v-if="currentTask.audio_path"
+            :href="audioUrl"
+            class="mt-3 inline-flex rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-cyan-200 transition hover:bg-cyan-400/20">
+            下载提取音频
+          </a>
+        </div>
+      </section>
+    </div>
+
+    <section v-if="resultTask" class="rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-black/30 backdrop-blur">
+      <div class="flex flex-col gap-2 border-b border-white/10 pb-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h2 class="text-2xl font-semibold text-white">3. 处理结果</h2>
+          <p class="mt-1 text-sm text-slate-400">转写始终输出；选中的大模型结果会额外显示。</p>
+        </div>
+        <div class="text-xs text-slate-500">状态：{{ resultTask.status }}</div>
+      </div>
+
+      <div class="mt-6 space-y-6">
+        <div v-if="resultTask.asr_text" class="rounded-2xl border border-white/10 bg-slate-950/70 p-5">
+          <div class="mb-3 flex items-center justify-between gap-3">
+            <h3 class="text-lg font-medium text-cyan-300">转写文字</h3>
+            <button @click="copy(resultTask.asr_text)" class="text-xs text-cyan-200 transition hover:text-white">复制</button>
+          </div>
+          <pre class="whitespace-pre-wrap break-words text-sm leading-7 text-slate-200">{{ resultTask.asr_text }}</pre>
+        </div>
+
+        <div v-if="resultTask.titles_text" class="rounded-2xl border border-white/10 bg-slate-950/70 p-5">
+          <div class="mb-3 flex items-center justify-between gap-3">
+            <h3 class="text-lg font-medium text-amber-300">标题建议</h3>
+            <button @click="copy(resultTask.titles_text)" class="text-xs text-amber-200 transition hover:text-white">复制</button>
+          </div>
+          <pre class="whitespace-pre-wrap break-words text-sm leading-7 text-slate-200">{{ resultTask.titles_text }}</pre>
+        </div>
+
+        <div v-if="resultTask.cover_prompt" class="rounded-2xl border border-white/10 bg-slate-950/70 p-5">
+          <div class="mb-3 flex items-center justify-between gap-3">
+            <h3 class="text-lg font-medium text-fuchsia-300">封面提示词</h3>
+            <button @click="copy(resultTask.cover_prompt)" class="text-xs text-fuchsia-200 transition hover:text-white">复制</button>
+          </div>
+          <pre class="whitespace-pre-wrap break-words text-sm leading-7 text-slate-200">{{ resultTask.cover_prompt }}</pre>
+        </div>
+
+        <div v-if="resultTask.polished_text" class="rounded-2xl border border-white/10 bg-slate-950/70 p-5">
+          <div class="mb-3 flex items-center justify-between gap-3">
+            <h3 class="text-lg font-medium text-emerald-300">{{ resultTask.style || selectedStyle }}文案</h3>
+            <button @click="copy(resultTask.polished_text)" class="text-xs text-emerald-200 transition hover:text-white">复制</button>
+          </div>
+          <pre class="whitespace-pre-wrap break-words text-sm leading-7 text-slate-200">{{ resultTask.polished_text }}</pre>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const { createApp, ref, computed, onMounted } = Vue;
+    const API_BASE = window.location.pathname.startsWith("/video2text/")
+      ? "/video2text/api"
+      : "";
+
+    createApp({
+      setup() {
+        const files = ref([]);
+        const currentDir = ref("");
+        const selectedFile = ref("");
+        const selectedStyle = ref("小红书");
+        const styles = ["小红书", "抖音", "严谨", "B站"];
+        const generateContent = ref(false);
+        const generateTitles = ref(false);
+        const generateCoverPrompt = ref(false);
+        const isProcessing = ref(false);
+        const message = ref("");
+        const currentTask = ref(null);
+        const resultTask = ref(null);
+        const videoRoot = ref("/mnt/data/4T/videos");
+
+        const llmRequested = computed(() => (
+          generateContent.value || generateTitles.value || generateCoverPrompt.value
+        ));
+
+        const breadcrumbs = computed(() => (
+          currentDir.value ? currentDir.value.split("/").filter(Boolean) : []
+        ));
+
+        const audioUrl = computed(() => (
+          currentTask.value ? `${API_BASE}/tasks/${currentTask.value.task_id}/audio` : ""
+        ));
+
+        const messageClass = computed(() => {
+          if (message.value.startsWith("处理失败")) {
+            return "bg-red-500/15 text-red-200 border border-red-400/20";
+          }
+          if (message.value.startsWith("转写完成") || message.value.startsWith("转写与")) {
+            return "bg-emerald-500/15 text-emerald-200 border border-emerald-400/20";
+          }
+          return "bg-cyan-500/15 text-cyan-100 border border-cyan-400/20";
+        });
+
+        const requestJson = async (url, options = {}) => {
+          const response = await fetch(url, options);
+          const raw = await response.text();
+          let payload = null;
+          try {
+            payload = raw ? JSON.parse(raw) : null;
+          } catch (error) {
+            payload = raw;
+          }
+
+          if (!response.ok) {
+            const detail = payload && typeof payload === "object" ? payload.detail : payload;
+            throw new Error(detail || `HTTP ${response.status}`);
+          }
+
+          return payload;
+        };
+
+        const fetchMeta = async () => {
+          try {
+            const data = await requestJson(`${API_BASE}/meta`);
+            if (data && data.video_root) {
+              videoRoot.value = data.video_root;
+            }
+          } catch (error) {
+            console.error(error);
+          }
+        };
+
+        const fetchFiles = async (path = currentDir.value) => {
+          const target = new URL(`${API_BASE}/files`, window.location.origin);
+          if (path) {
+            target.searchParams.set("path", path);
+          }
+          const data = await requestJson(target.toString());
+          files.value = Array.isArray(data) ? data : [];
+          currentDir.value = path;
+        };
+
+        const openBreadcrumb = async (index) => {
+          const path = breadcrumbs.value.slice(0, index + 1).join("/");
+          await fetchFiles(path);
+        };
+
+        const goUp = async () => {
+          if (!currentDir.value) {
+            return;
+          }
+          const parent = currentDir.value.split("/").slice(0, -1).join("/");
+          await fetchFiles(parent);
+        };
+
+        const handleFile = async (file) => {
+          if (file.is_dir) {
+            await fetchFiles(file.path);
+            return;
+          }
+          selectedFile.value = file.path;
+        };
+
+        const copy = async (text) => {
+          await navigator.clipboard.writeText(text);
+          message.value = "已复制到剪贴板。";
+        };
+
+        const startProcess = async () => {
+          if (!selectedFile.value || isProcessing.value) {
+            return;
+          }
+
+          isProcessing.value = true;
+          message.value = "正在创建任务...";
+          resultTask.value = null;
+
+          try {
+            let task = await requestJson(`${API_BASE}/tasks/create`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ video_path: selectedFile.value }),
+            });
+            currentTask.value = task;
+
+            message.value = "正在提取音频...";
+            task = await requestJson(`${API_BASE}/tasks/${task.task_id}/extract-audio`, {
+              method: "POST",
+            });
+            currentTask.value = task;
+
+            message.value = "正在识别音频...";
+            task = await requestJson(`${API_BASE}/tasks/${task.task_id}/asr`, {
+              method: "POST",
+            });
+            currentTask.value = task;
+
+            if (llmRequested.value) {
+              message.value = "正在调用大模型生成选定内容...";
+              task = await requestJson(`${API_BASE}/tasks/${task.task_id}/polish`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  style: selectedStyle.value,
+                  generate_content: generateContent.value,
+                  generate_titles: generateTitles.value,
+                  generate_cover_prompt: generateCoverPrompt.value,
+                }),
+              });
+              currentTask.value = task;
+              message.value = "转写与大模型输出完成。";
+            } else {
+              message.value = "转写完成，未启用大模型输出。";
+            }
+
+            resultTask.value = currentTask.value;
+          } catch (error) {
+            message.value = `处理失败：${error.message || error}`;
+            if (currentTask.value && currentTask.value.asr_text) {
+              resultTask.value = currentTask.value;
+            }
+          } finally {
+            isProcessing.value = false;
+          }
+        };
+
+        onMounted(async () => {
+          await fetchMeta();
+          await fetchFiles("");
+        });
+
+        return {
+          audioUrl,
+          breadcrumbs,
+          copy,
+          currentDir,
+          currentTask,
+          fetchFiles,
+          generateContent,
+          generateCoverPrompt,
+          generateTitles,
+          goUp,
+          handleFile,
+          isProcessing,
+          llmRequested,
+          message,
+          messageClass,
+          openBreadcrumb,
+          resultTask,
+          selectedFile,
+          selectedStyle,
+          startProcess,
+          styles,
+          files,
+          videoRoot,
+        };
+      },
+    }).mount("#app");
+  </script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+backend/models/
+backend/output/
+backend/tasks.db
+videos/
+__pycache__/
+*.py[cod]
+.venv/
+.env
