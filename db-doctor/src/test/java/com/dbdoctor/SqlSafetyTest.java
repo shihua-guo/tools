@@ -10,11 +10,23 @@ class SqlSafetyTest {
     void allowsReadOnlySelectWithDdlWordsInsideStringLiterals() {
         String sql = "SELECT *\n"
                 + "FROM pg_query_audit(\n"
-                + "    to_char(now() - interval '20 minutes', 'YYYY-MM-DD HH24:MI:SS'),\n"
-                + "    to_char(now(), 'YYYY-MM-DD HH24:MI:SS')\n"
-                + ")\n"
+                + "    now() - interval '20 minutes',\n"
+                + "    now()\n"
+                + ") AS t\n"
                 + "WHERE upper(detail_info) LIKE '%DROP %'";
         assertDoesNotThrow(() -> SqlSafety.requireReadOnly(sql));
+    }
+
+    @Test
+    void recentDdlDclAuditUsesTimestampArgumentsAndSkipsDmlTypes() {
+        String sql = DiagnosisService.recentDdlDclSql(60, 50);
+        assertDoesNotThrow(() -> SqlSafety.requireReadOnly(sql));
+        org.junit.jupiter.api.Assertions.assertTrue(sql.contains("now() - interval '60 minutes'"));
+        org.junit.jupiter.api.Assertions.assertTrue(sql.contains("now()"));
+        org.junit.jupiter.api.Assertions.assertTrue(sql.contains("LIKE 'ddl_%'"));
+        org.junit.jupiter.api.Assertions.assertTrue(sql.contains("LIKE 'dcl_%'"));
+        org.junit.jupiter.api.Assertions.assertFalse(sql.contains("dml_action"));
+        org.junit.jupiter.api.Assertions.assertFalse(sql.contains("to_char("));
     }
 
     @Test

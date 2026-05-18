@@ -410,36 +410,34 @@ public class DiagnosisService {
 
     private DiagnosticResult recentDdlDcl() throws SQLException {
         int minutes = config.diagnosis.ddlLookbackMinutes;
-        String sql = String.format("SELECT time,\n"
-                + "       type,\n"
-                + "       result,\n"
-                + "       username,\n"
-                + "       database,\n"
-                + "       client_conninfo,\n"
-                + "       object_name,\n"
-                + "       detail_info\n"
-                + "FROM pg_query_audit(\n"
-                + "    to_char(now() - interval '%d minutes', 'YYYY-MM-DD HH24:MI:SS'),\n"
-                + "    to_char(now(), 'YYYY-MM-DD HH24:MI:SS')\n"
-                + ")\n"
-                + "WHERE upper(coalesce(detail_info, '')) LIKE '%%CREATE %%'\n"
-                + "   OR upper(coalesce(detail_info, '')) LIKE '%%ALTER %%'\n"
-                + "   OR upper(coalesce(detail_info, '')) LIKE '%%DROP %%'\n"
-                + "   OR upper(coalesce(detail_info, '')) LIKE '%%TRUNCATE %%'\n"
-                + "   OR upper(coalesce(detail_info, '')) LIKE '%%GRANT %%'\n"
-                + "   OR upper(coalesce(detail_info, '')) LIKE '%%REVOKE %%'\n"
-                + "   OR upper(coalesce(type, '')) LIKE '%%DDL%%'\n"
-                + "   OR upper(coalesce(type, '')) LIKE '%%DCL%%'\n"
-                + "ORDER BY time DESC\n"
-                + "LIMIT %d", minutes, limit());
+        String sql = recentDdlDclSql(minutes, limit());
         QueryResult qr = db.query(sql);
         boolean dangerous = qr.rows.stream().anyMatch(row -> isDangerousDdl(row.get("detail_info")));
         Severity severity = qr.rowCount() == 0 ? Severity.OK : dangerous ? Severity.CRITICAL : Severity.WARNING;
         DiagnosticResult result = DiagnosticResult.of("recent_ddl_dcl", "最近 DDL/DCL 审计", severity,
                 severity == Severity.OK ? "最近 " + minutes + " 分钟未发现 DDL/DCL 审计记录" : "最近 " + minutes + " 分钟发现 DDL/DCL 审计记录", qr);
-        result.observations.add("通过 pg_query_audit 查询审计结果；这里只读取审计信息。");
+        result.observations.add("通过 pg_query_audit 查询审计结果；这里只读取 DDL/DCL 类审计信息。");
         result.observations.add("DROP/TRUNCATE/GRANT/REVOKE/用户权限变更会提升为严重风险。");
         return result;
+    }
+
+    static String recentDdlDclSql(int minutes, int limit) {
+        return String.format("SELECT t.time,\n"
+                + "       t.type,\n"
+                + "       t.result,\n"
+                + "       t.username,\n"
+                + "       t.database,\n"
+                + "       t.client_conninfo,\n"
+                + "       t.object_name,\n"
+                + "       t.detail_info\n"
+                + "FROM pg_query_audit(\n"
+                + "    now() - interval '%d minutes',\n"
+                + "    now()\n"
+                + ") AS t\n"
+                + "WHERE lower(coalesce(t.type, '')) LIKE 'ddl_%%'\n"
+                + "   OR lower(coalesce(t.type, '')) LIKE 'dcl_%%'\n"
+                + "ORDER BY t.time DESC\n"
+                + "LIMIT %d", minutes, limit);
     }
 
     private boolean isDangerousDdl(String detail) {
