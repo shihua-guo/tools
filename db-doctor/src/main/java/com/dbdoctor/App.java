@@ -51,8 +51,8 @@ public class App implements Callable<Integer> {
                 System.out.println(index++ + ". " + finding);
             }
         }
-        if (files.markdownPath() != null) {
-            System.out.println("Markdown report: " + files.markdownPath().toAbsolutePath());
+        if (files.htmlPath() != null) {
+            System.out.println("HTML report: " + files.htmlPath().toAbsolutePath());
         }
         if (files.jsonPath() != null) {
             System.out.println("JSON report: " + files.jsonPath().toAbsolutePath());

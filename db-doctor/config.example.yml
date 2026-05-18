@@ -33,5 +33,5 @@ whitelist:
 
 report:
   outputDir: "reports"
-  markdown: true
+  html: true
   json: true

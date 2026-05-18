@@ -122,7 +122,9 @@ public class DoctorConfig {
 
     public static class Report {
         public String outputDir = "reports";
-        public boolean markdown = true;
+        public boolean html = true;
+        @Deprecated
+        public boolean markdown = false;
         public boolean json = true;
     }
 }

@@ -2,7 +2,7 @@
 
 `db-doctor` is a read-only openGauss 6 quick diagnosis CLI for recovery drills.
 
-It connects with the configured database user, runs built-in diagnostic SQL, prints a short console summary, and writes Markdown/JSON reports.
+It connects with the configured database user, runs built-in diagnostic SQL, prints a short console summary, and writes HTML/JSON reports.
 
 ## Build
 
@@ -51,6 +51,6 @@ Use your own config file for real credentials.
 Reports are written to the configured output directory, for example:
 
 ```text
-reports/db-doctor-20260514-153000.md
+reports/db-doctor-20260514-153000.html
 reports/db-doctor-20260514-153000.json
 ```
