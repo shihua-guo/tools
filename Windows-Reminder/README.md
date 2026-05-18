@@ -44,6 +44,23 @@ Windows-Reminder 是一款专为 Windows 用户设计的轻量级悬浮窗待办
    python -m src.main
    ```
 
+## 打包 EXE
+
+请在 Windows 11 环境中执行打包，生成的文件位于 `dist\Windows-Reminder.exe`。
+
+```powershell
+python -m venv venv
+.\venv\Scripts\activate
+pip install -r requirements.txt
+python build.py
+```
+
+如果需要开机自启动，可将生成的 `Windows-Reminder.exe` 快捷方式放入：
+
+```text
+%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
+```
+
 ## 快捷键说明
 
 - **`Ctrl + Shift + R`**：切换悬浮窗的显示与隐藏。
