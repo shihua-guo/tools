@@ -21,10 +21,13 @@ class SqlSafetyTest {
     void recentDdlDclAuditUsesTimestampArgumentsAndSkipsDmlTypes() {
         String sql = DiagnosisService.recentDdlDclSql(60, 50);
         assertDoesNotThrow(() -> SqlSafety.requireReadOnly(sql));
-        org.junit.jupiter.api.Assertions.assertTrue(sql.contains("now() - interval '60 minutes'"));
-        org.junit.jupiter.api.Assertions.assertTrue(sql.contains("now()"));
+        org.junit.jupiter.api.Assertions.assertTrue(sql.contains("(now() - interval '60 minutes')::timestamptz"));
+        org.junit.jupiter.api.Assertions.assertTrue(sql.contains("now()::timestamptz"));
         org.junit.jupiter.api.Assertions.assertTrue(sql.contains("LIKE 'ddl_%'"));
         org.junit.jupiter.api.Assertions.assertTrue(sql.contains("LIKE 'dcl_%'"));
+        org.junit.jupiter.api.Assertions.assertTrue(sql.contains("set_parameter"));
+        org.junit.jupiter.api.Assertions.assertTrue(sql.contains("login_success"));
+        org.junit.jupiter.api.Assertions.assertTrue(sql.contains("NOT LIKE 'dml_%'"));
         org.junit.jupiter.api.Assertions.assertFalse(sql.contains("dml_action"));
         org.junit.jupiter.api.Assertions.assertFalse(sql.contains("to_char("));
     }
