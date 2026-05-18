@@ -25,14 +25,14 @@ public class ReportWriter {
     }
 
     public ReportFiles write(DiagnosticSummary summary) throws IOException {
-        Path outputDir = Path.of(config.report.outputDir);
+        Path outputDir = java.nio.file.Paths.get(config.report.outputDir);
         Files.createDirectories(outputDir);
         String baseName = "db-doctor-" + FILE_TIME.format(summary.generatedAt);
         Path markdownPath = null;
         Path jsonPath = null;
         if (config.report.markdown) {
             markdownPath = outputDir.resolve(baseName + ".md");
-            Files.writeString(markdownPath, toMarkdown(summary), StandardCharsets.UTF_8);
+            Files.write(markdownPath, toMarkdown(summary).getBytes(StandardCharsets.UTF_8));
         }
         if (config.report.json) {
             jsonPath = outputDir.resolve(baseName + ".json");
@@ -84,7 +84,7 @@ public class ReportWriter {
         if (result.queryResult != null) {
             md.append("- 执行耗时: ").append(result.queryResult.elapsedMs).append(" ms\n");
             md.append("- 结果行数: ").append(result.queryResult.rowCount()).append("\n\n");
-            md.append("```sql\n").append(result.queryResult.sql.strip()).append("\n```\n\n");
+            md.append("```sql\n").append(result.queryResult.sql.trim()).append("\n```\n\n");
             appendTable(md, result.queryResult);
         }
     }
@@ -132,6 +132,21 @@ public class ReportWriter {
         return value.replace("\r\n", " ").replace("\n", " ").replace("\r", " ");
     }
 
-    public record ReportFiles(Path markdownPath, Path jsonPath) {
+    public static class ReportFiles {
+        public final Path markdownPath;
+        public final Path jsonPath;
+
+        public ReportFiles(Path markdownPath, Path jsonPath) {
+            this.markdownPath = markdownPath;
+            this.jsonPath = jsonPath;
+        }
+
+        public Path markdownPath() {
+            return markdownPath;
+        }
+
+        public Path jsonPath() {
+            return jsonPath;
+        }
     }
 }

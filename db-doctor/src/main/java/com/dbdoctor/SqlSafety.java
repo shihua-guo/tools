@@ -19,7 +19,7 @@ public final class SqlSafety {
     }
 
     public static void requireReadOnly(String sql) {
-        if (sql == null || sql.isBlank()) {
+        if (sql == null || sql.trim().isEmpty()) {
             throw new IllegalArgumentException("SQL is blank");
         }
         String sanitized = stripCommentsAndLiterals(sql).trim();

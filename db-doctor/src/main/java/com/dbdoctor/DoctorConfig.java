@@ -44,7 +44,7 @@ public class DoctorConfig {
         if (whitelist.clientIps == null) {
             whitelist.clientIps = new ArrayList<>();
         }
-        if (report.outputDir == null || report.outputDir.isBlank()) {
+        if (isBlank(report.outputDir)) {
             report.outputDir = "reports";
         }
     }
@@ -79,9 +79,13 @@ public class DoctorConfig {
     }
 
     private static void requireText(String value, String name) {
-        if (value == null || value.isBlank()) {
+        if (isBlank(value)) {
             throw new IllegalArgumentException(name + " is required");
         }
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
     public static class Database {

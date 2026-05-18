@@ -48,12 +48,10 @@ public class DiagnosisService {
     }
 
     private DiagnosticResult basicInfo() throws SQLException {
-        String sql = """
-                SELECT version() AS version,
-                       current_database() AS database_name,
-                       current_user AS current_user,
-                       now() AS checked_at
-                """;
+        String sql = "SELECT version() AS version,\n"
+                + "       current_database() AS database_name,\n"
+                + "       current_user AS current_user,\n"
+                + "       now() AS checked_at";
         QueryResult qr = db.query(sql);
         DiagnosticResult result = DiagnosticResult.of("basic_info", "基础信息", Severity.OK, "数据库连接正常，基础信息已采集", qr);
         result.observations.add("用于确认当前连接目标、账号和数据库版本。");
@@ -61,23 +59,21 @@ public class DiagnosisService {
     }
 
     private DiagnosticResult keySettings() throws SQLException {
-        String sql = """
-                SELECT name, setting, unit, vartype, context
-                FROM pg_settings
-                WHERE name IN (
-                    'max_connections',
-                    'superuser_reserved_connections',
-                    'audit_enabled',
-                    'audit_system_object',
-                    'audit_dml_state',
-                    'audit_dml_state_select',
-                    'log_statement',
-                    'track_activities',
-                    'statement_timeout',
-                    'session_timeout'
-                )
-                ORDER BY name
-                """;
+        String sql = "SELECT name, setting, unit, vartype, context\n"
+                + "FROM pg_settings\n"
+                + "WHERE name IN (\n"
+                + "    'max_connections',\n"
+                + "    'superuser_reserved_connections',\n"
+                + "    'audit_enabled',\n"
+                + "    'audit_system_object',\n"
+                + "    'audit_dml_state',\n"
+                + "    'audit_dml_state_select',\n"
+                + "    'log_statement',\n"
+                + "    'track_activities',\n"
+                + "    'statement_timeout',\n"
+                + "    'session_timeout'\n"
+                + ")\n"
+                + "ORDER BY name";
         QueryResult qr = db.query(sql);
         Severity severity = Severity.OK;
         List<String> auditProblems = qr.rows.stream()
@@ -98,20 +94,18 @@ public class DiagnosisService {
     }
 
     private DiagnosticResult connectionUsage() throws SQLException {
-        String sql = """
-                SELECT current_connections::bigint AS current_connections,
-                       max_connections::bigint AS max_connections,
-                       round(current_connections * 100.0 / nullif(max_connections, 0), 2) AS usage_percent
-                FROM (
-                    SELECT count(*)::numeric AS current_connections
-                    FROM pg_stat_activity
-                ) c,
-                (
-                    SELECT setting::numeric AS max_connections
-                    FROM pg_settings
-                    WHERE name = 'max_connections'
-                ) m
-                """;
+        String sql = "SELECT current_connections::bigint AS current_connections,\n"
+                + "       max_connections::bigint AS max_connections,\n"
+                + "       round(current_connections * 100.0 / nullif(max_connections, 0), 2) AS usage_percent\n"
+                + "FROM (\n"
+                + "    SELECT count(*)::numeric AS current_connections\n"
+                + "    FROM pg_stat_activity\n"
+                + ") c,\n"
+                + "(\n"
+                + "    SELECT setting::numeric AS max_connections\n"
+                + "    FROM pg_settings\n"
+                + "    WHERE name = 'max_connections'\n"
+                + ") m";
         QueryResult qr = db.query(sql);
         Map<String, String> row = qr.firstRow();
         double usagePercent = number(row, "usage_percent", 0);
@@ -120,27 +114,32 @@ public class DiagnosisService {
         Severity severity = usagePercent >= criticalPercent
                 ? Severity.CRITICAL
                 : usagePercent >= warningPercent ? Severity.WARNING : Severity.OK;
-        DiagnosticResult result = DiagnosticResult.of("connection_usage", "连接使用率", severity,
-                switch (severity) {
-                    case CRITICAL -> "连接使用率已达到严重阈值";
-                    case WARNING -> "连接使用率偏高";
-                    default -> "连接使用率正常";
-                }, qr);
+        String conclusion;
+        switch (severity) {
+            case CRITICAL:
+                conclusion = "连接使用率已达到严重阈值";
+                break;
+            case WARNING:
+                conclusion = "连接使用率偏高";
+                break;
+            default:
+                conclusion = "连接使用率正常";
+                break;
+        }
+        DiagnosticResult result = DiagnosticResult.of("connection_usage", "连接使用率", severity, conclusion, qr);
         result.observations.add("当前连接使用率: " + usagePercent + "%，预警阈值: " + warningPercent + "%，严重阈值: " + criticalPercent + "%。");
         return result;
     }
 
     private DiagnosticResult connectionDistribution() throws SQLException {
-        String sql = """
-                SELECT coalesce(usename, '<internal>') AS username,
-                       coalesce(client_addr::text, 'local') AS client_addr,
-                       coalesce(state, 'unknown') AS state,
-                       count(*)::bigint AS connections
-                FROM pg_stat_activity
-                GROUP BY coalesce(usename, '<internal>'), coalesce(client_addr::text, 'local'), coalesce(state, 'unknown')
-                ORDER BY connections DESC, username, client_addr, state
-                LIMIT %d
-                """.formatted(limit());
+        String sql = String.format("SELECT coalesce(usename, '<internal>') AS username,\n"
+                + "       coalesce(client_addr::text, 'local') AS client_addr,\n"
+                + "       coalesce(state, 'unknown') AS state,\n"
+                + "       count(*)::bigint AS connections\n"
+                + "FROM pg_stat_activity\n"
+                + "GROUP BY coalesce(usename, '<internal>'), coalesce(client_addr::text, 'local'), coalesce(state, 'unknown')\n"
+                + "ORDER BY connections DESC, username, client_addr, state\n"
+                + "LIMIT %d", limit());
         QueryResult qr = db.query(sql);
         long total = qr.rows.stream().mapToLong(row -> longNumber(row, "connections", 0)).sum();
         long largest = qr.rows.stream().mapToLong(row -> longNumber(row, "connections", 0)).max().orElse(0);
@@ -152,20 +151,18 @@ public class DiagnosisService {
     }
 
     private DiagnosticResult whitelistAnomalies() throws SQLException {
-        String sql = """
-                SELECT pid,
-                       coalesce(usename, '<internal>') AS username,
-                       coalesce(client_addr::text, 'local') AS client_addr,
-                       coalesce(application_name, '') AS application_name,
-                       coalesce(state, 'unknown') AS state,
-                       backend_start,
-                       query_start,
-                       xact_start,
-                       query
-                FROM pg_stat_activity
-                ORDER BY backend_start DESC
-                LIMIT %d
-                """.formatted(limit());
+        String sql = String.format("SELECT pid,\n"
+                + "       coalesce(usename, '<internal>') AS username,\n"
+                + "       coalesce(client_addr::text, 'local') AS client_addr,\n"
+                + "       coalesce(application_name, '') AS application_name,\n"
+                + "       coalesce(state, 'unknown') AS state,\n"
+                + "       backend_start,\n"
+                + "       query_start,\n"
+                + "       xact_start,\n"
+                + "       query\n"
+                + "FROM pg_stat_activity\n"
+                + "ORDER BY backend_start DESC\n"
+                + "LIMIT %d", limit());
         QueryResult qr = db.query(sql);
         DiagnosticResult result;
         if (!config.whitelist.enabled) {
@@ -174,7 +171,7 @@ public class DiagnosisService {
             return result;
         }
         Set<String> userWhitelist = config.whitelist.users.stream()
-                .filter(value -> value != null && !value.isBlank())
+                .filter(value -> !isBlank(value))
                 .map(value -> value.toLowerCase(Locale.ROOT))
                 .collect(Collectors.toSet());
         IpWhitelist ipWhitelist = new IpWhitelist(config.whitelist.clientIps);
@@ -187,7 +184,7 @@ public class DiagnosisService {
                     return badUser || badIp;
                 })
                 .map(row -> row.get("username") + "@" + row.get("client_addr") + " pid=" + row.get("pid"))
-                .toList();
+                .collect(Collectors.toList());
         Severity severity = anomalies.isEmpty() ? Severity.OK : Severity.WARNING;
         result = DiagnosticResult.of("whitelist_anomalies", "白名单异常", severity,
                 anomalies.isEmpty() ? "未发现非白名单会话" : "发现非白名单用户或来源 IP", qr);
@@ -196,22 +193,20 @@ public class DiagnosisService {
     }
 
     private DiagnosticResult longQueries() throws SQLException {
-        String sql = """
-                SELECT pid,
-                       usename AS username,
-                       datname AS database_name,
-                       coalesce(client_addr::text, 'local') AS client_addr,
-                       state,
-                       round(extract(epoch FROM now() - query_start))::bigint AS duration_seconds,
-                       query_start,
-                       query
-                FROM pg_stat_activity
-                WHERE state = 'active'
-                  AND query_start IS NOT NULL
-                  AND now() - query_start > interval '%d seconds'
-                ORDER BY query_start ASC
-                LIMIT %d
-                """.formatted(config.thresholds.longQuerySeconds, limit());
+        String sql = String.format("SELECT pid,\n"
+                + "       usename AS username,\n"
+                + "       datname AS database_name,\n"
+                + "       coalesce(client_addr::text, 'local') AS client_addr,\n"
+                + "       state,\n"
+                + "       round(extract(epoch FROM now() - query_start))::bigint AS duration_seconds,\n"
+                + "       query_start,\n"
+                + "       query\n"
+                + "FROM pg_stat_activity\n"
+                + "WHERE state = 'active'\n"
+                + "  AND query_start IS NOT NULL\n"
+                + "  AND now() - query_start > interval '%d seconds'\n"
+                + "ORDER BY query_start ASC\n"
+                + "LIMIT %d", config.thresholds.longQuerySeconds, limit());
         QueryResult qr = db.query(sql);
         Severity severity = qr.rowCount() > 0 ? Severity.WARNING : Severity.OK;
         DiagnosticResult result = DiagnosticResult.of("long_queries", "慢 SQL", severity,
@@ -222,22 +217,20 @@ public class DiagnosisService {
     }
 
     private DiagnosticResult longTransactions() throws SQLException {
-        String sql = """
-                SELECT pid,
-                       usename AS username,
-                       datname AS database_name,
-                       coalesce(client_addr::text, 'local') AS client_addr,
-                       state,
-                       round(extract(epoch FROM now() - xact_start))::bigint AS transaction_seconds,
-                       xact_start,
-                       query_start,
-                       query
-                FROM pg_stat_activity
-                WHERE xact_start IS NOT NULL
-                  AND now() - xact_start > interval '%d seconds'
-                ORDER BY xact_start ASC
-                LIMIT %d
-                """.formatted(config.thresholds.longTransactionSeconds, limit());
+        String sql = String.format("SELECT pid,\n"
+                + "       usename AS username,\n"
+                + "       datname AS database_name,\n"
+                + "       coalesce(client_addr::text, 'local') AS client_addr,\n"
+                + "       state,\n"
+                + "       round(extract(epoch FROM now() - xact_start))::bigint AS transaction_seconds,\n"
+                + "       xact_start,\n"
+                + "       query_start,\n"
+                + "       query\n"
+                + "FROM pg_stat_activity\n"
+                + "WHERE xact_start IS NOT NULL\n"
+                + "  AND now() - xact_start > interval '%d seconds'\n"
+                + "ORDER BY xact_start ASC\n"
+                + "LIMIT %d", config.thresholds.longTransactionSeconds, limit());
         QueryResult qr = db.query(sql);
         long maxSeconds = qr.rows.stream().mapToLong(row -> longNumber(row, "transaction_seconds", 0)).max().orElse(0);
         Severity severity = qr.rowCount() == 0 ? Severity.OK :
@@ -249,23 +242,21 @@ public class DiagnosisService {
     }
 
     private DiagnosticResult idleInTransaction() throws SQLException {
-        String sql = """
-                SELECT pid,
-                       usename AS username,
-                       datname AS database_name,
-                       coalesce(client_addr::text, 'local') AS client_addr,
-                       state,
-                       round(extract(epoch FROM now() - state_change))::bigint AS idle_seconds,
-                       xact_start,
-                       state_change,
-                       query
-                FROM pg_stat_activity
-                WHERE state = 'idle in transaction'
-                  AND state_change IS NOT NULL
-                  AND now() - state_change > interval '%d seconds'
-                ORDER BY state_change ASC
-                LIMIT %d
-                """.formatted(config.thresholds.idleInTransactionSeconds, limit());
+        String sql = String.format("SELECT pid,\n"
+                + "       usename AS username,\n"
+                + "       datname AS database_name,\n"
+                + "       coalesce(client_addr::text, 'local') AS client_addr,\n"
+                + "       state,\n"
+                + "       round(extract(epoch FROM now() - state_change))::bigint AS idle_seconds,\n"
+                + "       xact_start,\n"
+                + "       state_change,\n"
+                + "       query\n"
+                + "FROM pg_stat_activity\n"
+                + "WHERE state = 'idle in transaction'\n"
+                + "  AND state_change IS NOT NULL\n"
+                + "  AND now() - state_change > interval '%d seconds'\n"
+                + "ORDER BY state_change ASC\n"
+                + "LIMIT %d", config.thresholds.idleInTransactionSeconds, limit());
         QueryResult qr = db.query(sql);
         long maxSeconds = qr.rows.stream().mapToLong(row -> longNumber(row, "idle_seconds", 0)).max().orElse(0);
         Severity severity = qr.rowCount() == 0 ? Severity.OK :
@@ -277,39 +268,37 @@ public class DiagnosisService {
     }
 
     private DiagnosticResult lockWaits() throws SQLException {
-        String sql = """
-                SELECT blocked.pid AS blocked_pid,
-                       blocked_activity.usename AS blocked_user,
-                       coalesce(blocked_activity.client_addr::text, 'local') AS blocked_client,
-                       round(extract(epoch FROM now() - blocked_activity.query_start))::bigint AS blocked_wait_seconds,
-                       blocking.pid AS blocking_pid,
-                       blocking_activity.usename AS blocking_user,
-                       coalesce(blocking_activity.client_addr::text, 'local') AS blocking_client,
-                       blocked.mode AS blocked_mode,
-                       blocking.mode AS blocking_mode,
-                       blocked.locktype AS locktype,
-                       blocked_activity.query AS blocked_query,
-                       blocking_activity.query AS blocking_query
-                FROM pg_locks blocked
-                JOIN pg_stat_activity blocked_activity ON blocked_activity.pid = blocked.pid
-                JOIN pg_locks blocking
-                  ON blocking.locktype = blocked.locktype
-                 AND blocking.database IS NOT DISTINCT FROM blocked.database
-                 AND blocking.relation IS NOT DISTINCT FROM blocked.relation
-                 AND blocking.page IS NOT DISTINCT FROM blocked.page
-                 AND blocking.tuple IS NOT DISTINCT FROM blocked.tuple
-                 AND blocking.virtualxid IS NOT DISTINCT FROM blocked.virtualxid
-                 AND blocking.transactionid IS NOT DISTINCT FROM blocked.transactionid
-                 AND blocking.classid IS NOT DISTINCT FROM blocked.classid
-                 AND blocking.objid IS NOT DISTINCT FROM blocked.objid
-                 AND blocking.objsubid IS NOT DISTINCT FROM blocked.objsubid
-                 AND blocking.pid <> blocked.pid
-                JOIN pg_stat_activity blocking_activity ON blocking_activity.pid = blocking.pid
-                WHERE NOT blocked.granted
-                  AND blocking.granted
-                ORDER BY blocked_activity.query_start ASC
-                LIMIT %d
-                """.formatted(limit());
+        String sql = String.format("SELECT blocked.pid AS blocked_pid,\n"
+                + "       blocked_activity.usename AS blocked_user,\n"
+                + "       coalesce(blocked_activity.client_addr::text, 'local') AS blocked_client,\n"
+                + "       round(extract(epoch FROM now() - blocked_activity.query_start))::bigint AS blocked_wait_seconds,\n"
+                + "       blocking.pid AS blocking_pid,\n"
+                + "       blocking_activity.usename AS blocking_user,\n"
+                + "       coalesce(blocking_activity.client_addr::text, 'local') AS blocking_client,\n"
+                + "       blocked.mode AS blocked_mode,\n"
+                + "       blocking.mode AS blocking_mode,\n"
+                + "       blocked.locktype AS locktype,\n"
+                + "       blocked_activity.query AS blocked_query,\n"
+                + "       blocking_activity.query AS blocking_query\n"
+                + "FROM pg_locks blocked\n"
+                + "JOIN pg_stat_activity blocked_activity ON blocked_activity.pid = blocked.pid\n"
+                + "JOIN pg_locks blocking\n"
+                + "  ON blocking.locktype = blocked.locktype\n"
+                + " AND blocking.database IS NOT DISTINCT FROM blocked.database\n"
+                + " AND blocking.relation IS NOT DISTINCT FROM blocked.relation\n"
+                + " AND blocking.page IS NOT DISTINCT FROM blocked.page\n"
+                + " AND blocking.tuple IS NOT DISTINCT FROM blocked.tuple\n"
+                + " AND blocking.virtualxid IS NOT DISTINCT FROM blocked.virtualxid\n"
+                + " AND blocking.transactionid IS NOT DISTINCT FROM blocked.transactionid\n"
+                + " AND blocking.classid IS NOT DISTINCT FROM blocked.classid\n"
+                + " AND blocking.objid IS NOT DISTINCT FROM blocked.objid\n"
+                + " AND blocking.objsubid IS NOT DISTINCT FROM blocked.objsubid\n"
+                + " AND blocking.pid <> blocked.pid\n"
+                + "JOIN pg_stat_activity blocking_activity ON blocking_activity.pid = blocking.pid\n"
+                + "WHERE NOT blocked.granted\n"
+                + "  AND blocking.granted\n"
+                + "ORDER BY blocked_activity.query_start ASC\n"
+                + "LIMIT %d", limit());
         QueryResult qr = db.query(sql);
         long maxSeconds = qr.rows.stream().mapToLong(row -> longNumber(row, "blocked_wait_seconds", 0)).max().orElse(0);
         Severity severity = qr.rowCount() == 0 ? Severity.OK :
@@ -322,23 +311,21 @@ public class DiagnosisService {
     }
 
     private DiagnosticResult threadWaits() throws SQLException {
-        String sql = """
-                SELECT node_name,
-                       db_name,
-                       thread_name,
-                       tid,
-                       sessionid,
-                       wait_status,
-                       wait_event,
-                       locktag,
-                       lockmode,
-                       block_sessionid
-                FROM pg_thread_wait_status
-                WHERE wait_status IS NOT NULL
-                  AND wait_status <> 'none'
-                ORDER BY wait_status, tid
-                LIMIT %d
-                """.formatted(limit());
+        String sql = String.format("SELECT node_name,\n"
+                + "       db_name,\n"
+                + "       thread_name,\n"
+                + "       tid,\n"
+                + "       sessionid,\n"
+                + "       wait_status,\n"
+                + "       wait_event,\n"
+                + "       locktag,\n"
+                + "       lockmode,\n"
+                + "       block_sessionid\n"
+                + "FROM pg_thread_wait_status\n"
+                + "WHERE wait_status IS NOT NULL\n"
+                + "  AND wait_status <> 'none'\n"
+                + "ORDER BY wait_status, tid\n"
+                + "LIMIT %d", limit());
         QueryResult qr = db.query(sql);
         boolean lockWait = qr.rows.stream()
                 .anyMatch(row -> "acquire lock".equalsIgnoreCase(row.get("wait_status")));
@@ -350,12 +337,10 @@ public class DiagnosisService {
     }
 
     private DiagnosticResult deadlocks() throws SQLException {
-        String sql = """
-                SELECT datname AS database_name,
-                       deadlocks
-                FROM pg_stat_database
-                WHERE datname = current_database()
-                """;
+        String sql = "SELECT datname AS database_name,\n"
+                + "       deadlocks\n"
+                + "FROM pg_stat_database\n"
+                + "WHERE datname = current_database()";
         QueryResult qr = db.query(sql);
         long deadlocks = qr.rows.stream().mapToLong(row -> longNumber(row, "deadlocks", 0)).sum();
         Severity severity = deadlocks > 0 ? Severity.WARNING : Severity.OK;
@@ -366,41 +351,39 @@ public class DiagnosisService {
     }
 
     private DiagnosticResult riskyRoles() throws SQLException {
-        String sql = """
-                SELECT rolname,
-                       rolsuper,
-                       rolsystemadmin,
-                       rolauditadmin,
-                       rolmonitoradmin,
-                       roloperatoradmin,
-                       rolpolicyadmin,
-                       rolcreaterole,
-                       rolcreatedb,
-                       rolcanlogin,
-                       rolreplication,
-                       rolconnlimit,
-                       rolvalidbegin,
-                       rolvaliduntil
-                FROM pg_roles
-                WHERE rolcanlogin
-                   OR rolsuper
-                   OR rolsystemadmin
-                   OR rolauditadmin
-                   OR rolmonitoradmin
-                   OR roloperatoradmin
-                   OR rolpolicyadmin
-                   OR rolcreaterole
-                   OR rolcreatedb
-                   OR rolreplication
-                ORDER BY rolsuper DESC,
-                         rolsystemadmin DESC,
-                         rolauditadmin DESC,
-                         rolcreaterole DESC,
-                         rolcreatedb DESC,
-                         rolreplication DESC,
-                         rolname
-                LIMIT %d
-                """.formatted(limit());
+        String sql = String.format("SELECT rolname,\n"
+                + "       rolsuper,\n"
+                + "       rolsystemadmin,\n"
+                + "       rolauditadmin,\n"
+                + "       rolmonitoradmin,\n"
+                + "       roloperatoradmin,\n"
+                + "       rolpolicyadmin,\n"
+                + "       rolcreaterole,\n"
+                + "       rolcreatedb,\n"
+                + "       rolcanlogin,\n"
+                + "       rolreplication,\n"
+                + "       rolconnlimit,\n"
+                + "       rolvalidbegin,\n"
+                + "       rolvaliduntil\n"
+                + "FROM pg_roles\n"
+                + "WHERE rolcanlogin\n"
+                + "   OR rolsuper\n"
+                + "   OR rolsystemadmin\n"
+                + "   OR rolauditadmin\n"
+                + "   OR rolmonitoradmin\n"
+                + "   OR roloperatoradmin\n"
+                + "   OR rolpolicyadmin\n"
+                + "   OR rolcreaterole\n"
+                + "   OR rolcreatedb\n"
+                + "   OR rolreplication\n"
+                + "ORDER BY rolsuper DESC,\n"
+                + "         rolsystemadmin DESC,\n"
+                + "         rolauditadmin DESC,\n"
+                + "         rolcreaterole DESC,\n"
+                + "         rolcreatedb DESC,\n"
+                + "         rolreplication DESC,\n"
+                + "         rolname\n"
+                + "LIMIT %d", limit());
         QueryResult qr = db.query(sql);
         Severity severity = Severity.OK;
         DiagnosticResult result = DiagnosticResult.of("risky_roles", "用户与权限风险", severity,
@@ -408,14 +391,14 @@ public class DiagnosisService {
         result.observations.add("默认不把现有高权限账号判定为异常；如开启白名单，会结合 whitelist.users 判断。");
         if (config.whitelist.enabled) {
             Set<String> allowedUsers = config.whitelist.users.stream()
-                    .filter(value -> value != null && !value.isBlank())
+                    .filter(value -> !isBlank(value))
                     .map(value -> value.toLowerCase(Locale.ROOT))
                     .collect(Collectors.toSet());
             List<String> suspicious = qr.rows.stream()
                     .filter(row -> truthy(row.get("rolcanlogin")))
                     .filter(row -> !allowedUsers.contains(row.getOrDefault("rolname", "").toLowerCase(Locale.ROOT)))
                     .map(row -> row.get("rolname"))
-                    .toList();
+                    .collect(Collectors.toList());
             if (!suspicious.isEmpty()) {
                 result.severity = Severity.WARNING;
                 result.conclusion = "发现非白名单可登录角色";
@@ -427,30 +410,28 @@ public class DiagnosisService {
 
     private DiagnosticResult recentDdlDcl() throws SQLException {
         int minutes = config.diagnosis.ddlLookbackMinutes;
-        String sql = """
-                SELECT time,
-                       type,
-                       result,
-                       username,
-                       database,
-                       client_conninfo,
-                       object_name,
-                       detail_info
-                FROM pg_query_audit(
-                    to_char(now() - interval '%d minutes', 'YYYY-MM-DD HH24:MI:SS'),
-                    to_char(now(), 'YYYY-MM-DD HH24:MI:SS')
-                )
-                WHERE upper(coalesce(detail_info, '')) LIKE '%%CREATE %%'
-                   OR upper(coalesce(detail_info, '')) LIKE '%%ALTER %%'
-                   OR upper(coalesce(detail_info, '')) LIKE '%%DROP %%'
-                   OR upper(coalesce(detail_info, '')) LIKE '%%TRUNCATE %%'
-                   OR upper(coalesce(detail_info, '')) LIKE '%%GRANT %%'
-                   OR upper(coalesce(detail_info, '')) LIKE '%%REVOKE %%'
-                   OR upper(coalesce(type, '')) LIKE '%%DDL%%'
-                   OR upper(coalesce(type, '')) LIKE '%%DCL%%'
-                ORDER BY time DESC
-                LIMIT %d
-                """.formatted(minutes, limit());
+        String sql = String.format("SELECT time,\n"
+                + "       type,\n"
+                + "       result,\n"
+                + "       username,\n"
+                + "       database,\n"
+                + "       client_conninfo,\n"
+                + "       object_name,\n"
+                + "       detail_info\n"
+                + "FROM pg_query_audit(\n"
+                + "    to_char(now() - interval '%d minutes', 'YYYY-MM-DD HH24:MI:SS'),\n"
+                + "    to_char(now(), 'YYYY-MM-DD HH24:MI:SS')\n"
+                + ")\n"
+                + "WHERE upper(coalesce(detail_info, '')) LIKE '%%CREATE %%'\n"
+                + "   OR upper(coalesce(detail_info, '')) LIKE '%%ALTER %%'\n"
+                + "   OR upper(coalesce(detail_info, '')) LIKE '%%DROP %%'\n"
+                + "   OR upper(coalesce(detail_info, '')) LIKE '%%TRUNCATE %%'\n"
+                + "   OR upper(coalesce(detail_info, '')) LIKE '%%GRANT %%'\n"
+                + "   OR upper(coalesce(detail_info, '')) LIKE '%%REVOKE %%'\n"
+                + "   OR upper(coalesce(type, '')) LIKE '%%DDL%%'\n"
+                + "   OR upper(coalesce(type, '')) LIKE '%%DCL%%'\n"
+                + "ORDER BY time DESC\n"
+                + "LIMIT %d", minutes, limit());
         QueryResult qr = db.query(sql);
         boolean dangerous = qr.rows.stream().anyMatch(row -> isDangerousDdl(row.get("detail_info")));
         Severity severity = qr.rowCount() == 0 ? Severity.OK : dangerous ? Severity.CRITICAL : Severity.WARNING;
@@ -492,6 +473,10 @@ public class DiagnosisService {
                 || "true".equalsIgnoreCase(value)
                 || "on".equalsIgnoreCase(value)
                 || "1".equals(value));
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
     private double number(Map<String, String> row, String key, double fallback) {

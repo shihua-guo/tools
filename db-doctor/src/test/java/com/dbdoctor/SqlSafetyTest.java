@@ -8,14 +8,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class SqlSafetyTest {
     @Test
     void allowsReadOnlySelectWithDdlWordsInsideStringLiterals() {
-        String sql = """
-                SELECT *
-                FROM pg_query_audit(
-                    to_char(now() - interval '20 minutes', 'YYYY-MM-DD HH24:MI:SS'),
-                    to_char(now(), 'YYYY-MM-DD HH24:MI:SS')
-                )
-                WHERE upper(detail_info) LIKE '%DROP %'
-                """;
+        String sql = "SELECT *\n"
+                + "FROM pg_query_audit(\n"
+                + "    to_char(now() - interval '20 minutes', 'YYYY-MM-DD HH24:MI:SS'),\n"
+                + "    to_char(now(), 'YYYY-MM-DD HH24:MI:SS')\n"
+                + ")\n"
+                + "WHERE upper(detail_info) LIKE '%DROP %'";
         assertDoesNotThrow(() -> SqlSafety.requireReadOnly(sql));
     }
 

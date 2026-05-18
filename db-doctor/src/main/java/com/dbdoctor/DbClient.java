@@ -20,7 +20,7 @@ public class DbClient implements AutoCloseable {
     }
 
     public static DbClient connect(DoctorConfig config) throws SQLException, ClassNotFoundException {
-        Class.forName("org.opengauss.Driver");
+        Class.forName("com.huawei.opengauss.jdbc.Driver");
         DriverManager.setLoginTimeout(config.database.connectTimeoutSeconds);
         Properties properties = new Properties();
         properties.setProperty("user", config.database.username);

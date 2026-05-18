@@ -15,7 +15,7 @@ public class IpWhitelist {
             return;
         }
         for (String entry : entries) {
-            if (entry == null || entry.isBlank()) {
+            if (isBlank(entry)) {
                 continue;
             }
             String normalized = entry.trim().toLowerCase(Locale.ROOT);
@@ -31,7 +31,7 @@ public class IpWhitelist {
     }
 
     public boolean contains(String ip) {
-        if (ip == null || ip.isBlank()) {
+        if (isBlank(ip)) {
             return true;
         }
         String normalized = ip.trim().toLowerCase(Locale.ROOT);
@@ -66,7 +66,19 @@ public class IpWhitelist {
         }
     }
 
-    private record CidrV4(long network, long mask) {
+    private static boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+    private static class CidrV4 {
+        private final long network;
+        private final long mask;
+
+        private CidrV4(long network, long mask) {
+            this.network = network;
+            this.mask = mask;
+        }
+
         static CidrV4 parse(String value) {
             String[] parts = value.split("/");
             if (parts.length != 2) {
