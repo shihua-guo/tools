@@ -9,6 +9,8 @@ database:
   queryTimeoutSeconds: 5
 
 diagnosis:
+  continuous: false
+  intervalSeconds: 5
   ddlLookbackMinutes: 20
   keepFullSqlText: true
 

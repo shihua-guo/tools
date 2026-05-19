@@ -24,6 +24,22 @@ java -jar target/db-doctor-1.0.0.jar -c config.example.yml
 
 Use your own config file for real credentials.
 
+To keep one database connection open and run checks until the process is stopped:
+
+```bash
+java -jar target/db-doctor-1.0.0.jar -c config.example.yml --watch --interval-seconds 5
+```
+
+You can also enable this in the config file:
+
+```yaml
+diagnosis:
+  continuous: true
+  intervalSeconds: 5
+```
+
+In continuous mode, `db-doctor` connects once, reuses that JDBC connection for every check round, and closes it only when the process is stopped. If the connection is killed externally, the tool reports check errors but does not voluntarily release and reacquire the connection between rounds.
+
 ## Safety
 
 - The tool only executes built-in diagnostic SQL.
@@ -54,3 +70,5 @@ Reports are written to the configured output directory, for example:
 reports/db-doctor-20260514-153000.html
 reports/db-doctor-20260514-153000.json
 ```
+
+Continuous mode writes one timestamped report per round. If multiple reports are generated in the same second, `db-doctor` appends a numeric suffix to avoid overwriting earlier reports.

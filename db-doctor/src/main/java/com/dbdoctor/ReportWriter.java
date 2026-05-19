@@ -30,11 +30,11 @@ public class ReportWriter {
         Path htmlPath = null;
         Path jsonPath = null;
         if (config.report.html) {
-            htmlPath = outputDir.resolve(baseName + ".html");
+            htmlPath = uniqueReportPath(outputDir, baseName, ".html");
             Files.write(htmlPath, toHtml(summary).getBytes(StandardCharsets.UTF_8));
         }
         if (config.report.json) {
-            jsonPath = outputDir.resolve(baseName + ".json");
+            jsonPath = uniqueReportPath(outputDir, baseName, ".json");
             ObjectMapper mapper = new ObjectMapper()
                     .registerModule(new JavaTimeModule())
                     .enable(SerializationFeature.INDENT_OUTPUT)
@@ -42,6 +42,16 @@ public class ReportWriter {
             mapper.writeValue(jsonPath.toFile(), summary);
         }
         return new ReportFiles(htmlPath, jsonPath);
+    }
+
+    private Path uniqueReportPath(Path outputDir, String baseName, String extension) {
+        Path path = outputDir.resolve(baseName + extension);
+        int index = 2;
+        while (Files.exists(path)) {
+            path = outputDir.resolve(baseName + "-" + index + extension);
+            index++;
+        }
+        return path;
     }
 
     String toHtml(DiagnosticSummary summary) {

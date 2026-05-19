@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ReportWriterTest {
@@ -46,9 +47,39 @@ class ReportWriterTest {
         assertFalse(html.contains("```sql"));
     }
 
+    @Test
+    void writesUniqueReportNamesForSameGeneratedTime() throws Exception {
+        DoctorConfig config = new DoctorConfig();
+        config.report.outputDir = tempDir.toString();
+        config.report.html = true;
+        config.report.json = true;
+
+        DiagnosticSummary first = summaryAtFixedTime();
+        DiagnosticSummary second = summaryAtFixedTime();
+        ReportWriter writer = new ReportWriter(config);
+
+        ReportWriter.ReportFiles firstFiles = writer.write(first);
+        ReportWriter.ReportFiles secondFiles = writer.write(second);
+
+        assertNotEquals(firstFiles.htmlPath(), secondFiles.htmlPath());
+        assertNotEquals(firstFiles.jsonPath(), secondFiles.jsonPath());
+        assertTrue(Files.isRegularFile(firstFiles.htmlPath()));
+        assertTrue(Files.isRegularFile(secondFiles.htmlPath()));
+        assertTrue(Files.isRegularFile(firstFiles.jsonPath()));
+        assertTrue(Files.isRegularFile(secondFiles.jsonPath()));
+    }
+
     private QueryResult queryResult() {
         QueryResult queryResult = new QueryResult();
         queryResult.sql = "SELECT 1";
         return queryResult;
+    }
+
+    private DiagnosticSummary summaryAtFixedTime() {
+        DiagnosticSummary summary = new DiagnosticSummary();
+        summary.generatedAt = Instant.parse("2026-05-18T02:20:00Z");
+        summary.databaseTarget = "127.0.0.1:26000/postgres";
+        summary.addResult(DiagnosticResult.of("basic_info", "基础信息", Severity.OK, "数据库连接正常", queryResult()));
+        return summary;
     }
 }

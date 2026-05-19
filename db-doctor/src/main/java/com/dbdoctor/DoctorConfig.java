@@ -28,6 +28,7 @@ public class DoctorConfig {
         }
 
         diagnosis.ddlLookbackMinutes = clamp(diagnosis.ddlLookbackMinutes, 1, 1440);
+        diagnosis.intervalSeconds = clamp(diagnosis.intervalSeconds, 1, 86400);
         database.port = clamp(database.port, 1, 65535);
         database.connectTimeoutSeconds = clamp(database.connectTimeoutSeconds, 1, 60);
         database.queryTimeoutSeconds = clamp(database.queryTimeoutSeconds, 1, 300);
@@ -100,6 +101,8 @@ public class DoctorConfig {
     }
 
     public static class Diagnosis {
+        public boolean continuous = false;
+        public int intervalSeconds = 5;
         public int ddlLookbackMinutes = 20;
         public boolean keepFullSqlText = true;
     }

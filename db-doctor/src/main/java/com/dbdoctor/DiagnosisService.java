@@ -9,33 +9,40 @@ import java.util.stream.Collectors;
 
 public class DiagnosisService {
     private final DoctorConfig config;
-    private DbClient db;
+    private DatabaseClient db;
 
     public DiagnosisService(DoctorConfig config) {
         this.config = config;
     }
 
     public DiagnosticSummary run() {
+        try (DbClient client = DbClient.connect(config)) {
+            return run(client);
+        } catch (Exception e) {
+            DiagnosticSummary summary = new DiagnosticSummary();
+            summary.databaseTarget = config.databaseTarget();
+            summary.addResult(DiagnosticResult.error("connect_database", "数据库连接", e));
+            return summary;
+        }
+    }
+
+    public DiagnosticSummary run(DatabaseClient client) {
         DiagnosticSummary summary = new DiagnosticSummary();
         summary.databaseTarget = config.databaseTarget();
-        try (DbClient client = DbClient.connect(config)) {
-            this.db = client;
-            summary.addResult(check("basic_info", "基础信息", this::basicInfo));
-            summary.addResult(check("key_settings", "关键参数", this::keySettings));
-            summary.addResult(check("connection_usage", "连接使用率", this::connectionUsage));
-            summary.addResult(check("connection_distribution", "连接分布", this::connectionDistribution));
-            summary.addResult(check("whitelist_anomalies", "白名单异常", this::whitelistAnomalies));
-            summary.addResult(check("long_queries", "慢 SQL", this::longQueries));
-            summary.addResult(check("long_transactions", "长事务", this::longTransactions));
-            summary.addResult(check("idle_in_transaction", "空闲未提交事务", this::idleInTransaction));
-            summary.addResult(check("lock_waits", "锁等待与阻塞链", this::lockWaits));
-            summary.addResult(check("thread_waits", "线程等待状态", this::threadWaits));
-            summary.addResult(check("deadlocks", "死锁计数", this::deadlocks));
-            summary.addResult(check("risky_roles", "用户与权限风险", this::riskyRoles));
-            summary.addResult(check("recent_ddl_dcl", "最近 DDL/DCL 审计", this::recentDdlDcl));
-        } catch (Exception e) {
-            summary.addResult(DiagnosticResult.error("connect_database", "数据库连接", e));
-        }
+        this.db = client;
+        summary.addResult(check("basic_info", "基础信息", this::basicInfo));
+        summary.addResult(check("key_settings", "关键参数", this::keySettings));
+        summary.addResult(check("connection_usage", "连接使用率", this::connectionUsage));
+        summary.addResult(check("connection_distribution", "连接分布", this::connectionDistribution));
+        summary.addResult(check("whitelist_anomalies", "白名单异常", this::whitelistAnomalies));
+        summary.addResult(check("long_queries", "慢 SQL", this::longQueries));
+        summary.addResult(check("long_transactions", "长事务", this::longTransactions));
+        summary.addResult(check("idle_in_transaction", "空闲未提交事务", this::idleInTransaction));
+        summary.addResult(check("lock_waits", "锁等待与阻塞链", this::lockWaits));
+        summary.addResult(check("thread_waits", "线程等待状态", this::threadWaits));
+        summary.addResult(check("deadlocks", "死锁计数", this::deadlocks));
+        summary.addResult(check("risky_roles", "用户与权限风险", this::riskyRoles));
+        summary.addResult(check("recent_ddl_dcl", "最近 DDL/DCL 审计", this::recentDdlDcl));
         return summary;
     }
 
