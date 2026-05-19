@@ -57,6 +57,8 @@ POST /api/refresh
 
 Web mode stores the latest diagnosis result in memory and the browser renders it from the JSON API. It does not call the report writer, so `report.html` and `report.json` are ignored while `--web` is active.
 
+Web mode also keeps the database session persistent: it retries while the first connection has not been acquired, then reuses the same JDBC connection for every automatic or manual refresh until the Web process is stopped.
+
 To monitor multiple databases at the same time, start one process per config and assign each process a different port:
 
 ```bash

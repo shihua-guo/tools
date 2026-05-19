@@ -32,6 +32,7 @@ public class WebServer {
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
     private final DoctorConfig config;
+    private final PersistentDatabaseClient databaseClient;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
         Thread thread = new Thread(r, "db-doctor-web-refresh");
         thread.setDaemon(true);
@@ -49,7 +50,12 @@ public class WebServer {
     private volatile Instant lastFinishedAt;
 
     public WebServer(DoctorConfig config) {
+        this(config, new PersistentDatabaseClient(config));
+    }
+
+    WebServer(DoctorConfig config, PersistentDatabaseClient databaseClient) {
         this.config = config;
+        this.databaseClient = databaseClient;
     }
 
     public void startAndBlock() throws IOException, InterruptedException {
@@ -136,6 +142,7 @@ public class WebServer {
         payload.put("refreshSeconds", config.web.refreshSeconds);
         payload.put("refreshRunning", refreshRunning.get());
         payload.put("manualRefreshQueued", manualRefreshQueued.get());
+        payload.put("databaseConnected", databaseClient.isConnected());
         payload.put("lastStartedAt", lastStartedAt);
         payload.put("lastFinishedAt", lastFinishedAt);
         payload.put("summary", latestSummary.get());
@@ -167,7 +174,7 @@ public class WebServer {
         }
         lastStartedAt = Instant.now();
         try {
-            DiagnosticSummary summary = new DiagnosisService(config).run();
+            DiagnosticSummary summary = refreshOnce();
             latestSummary.set(summary);
             round.incrementAndGet();
         } catch (Exception e) {
@@ -182,16 +189,38 @@ public class WebServer {
         }
     }
 
+    private DiagnosticSummary refreshOnce() {
+        DatabaseClient client;
+        try {
+            client = databaseClient.get();
+        } catch (Exception e) {
+            DiagnosticSummary summary = new DiagnosticSummary();
+            summary.databaseTarget = config.databaseTarget();
+            summary.addResult(DiagnosticResult.error("connect_database", "数据库连接", e));
+            return summary;
+        }
+        return new DiagnosisService(config).run(client);
+    }
+
     private void stop() {
         if (!stopped.compareAndSet(false, true)) {
             return;
         }
         scheduler.shutdownNow();
+        closeDatabaseClient();
         HttpServer currentServer = server;
         if (currentServer != null) {
             currentServer.stop(0);
         }
         stopLatch.countDown();
+    }
+
+    private void closeDatabaseClient() {
+        try {
+            databaseClient.close();
+        } catch (Exception e) {
+            System.err.println("db-doctor failed to close database connection: " + e.getMessage());
+        }
     }
 
     private void removeShutdownHook(Thread shutdownHook) {

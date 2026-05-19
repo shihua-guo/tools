@@ -10,7 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 
-public class DbClient implements DatabaseClient, AutoCloseable {
+public class DbClient implements CloseableDatabaseClient {
     private final DoctorConfig config;
     private final Connection connection;
 
