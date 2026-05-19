@@ -444,7 +444,7 @@ public class DiagnosisService {
                 + "WHERE (\n"
                 + "       lower(coalesce(t.type, '')) LIKE 'ddl_%%'\n"
                 + "    OR lower(coalesce(t.type, '')) LIKE 'dcl_%%'\n"
-                + "    OR lower(coalesce(t.type, '')) IN ('login_success', 'login_failed', 'user_logout', 'set_parameter')\n"
+                + "    OR lower(coalesce(t.type, '')) IN ('login_failed', 'set_parameter')\n"
                 + ")\n"
                 + "  AND lower(coalesce(t.type, '')) NOT LIKE 'dml_%%'\n"
                 + "ORDER BY t.time DESC\n"
