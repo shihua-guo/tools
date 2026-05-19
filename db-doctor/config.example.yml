@@ -33,6 +33,12 @@ whitelist:
     - "::1"
     - "10.0.0.0/24"
 
+web:
+  enabled: false
+  host: "127.0.0.1"
+  port: 8080
+  refreshSeconds: 5
+
 report:
   outputDir: "reports"
   html: true

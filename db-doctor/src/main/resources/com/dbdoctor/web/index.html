@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>db-doctor Web UI</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #667085;
+      --line: #d8dee8;
+      --ok: #177245;
+      --info: #175cd3;
+      --warning: #a15c07;
+      --critical: #c1152f;
+      --shadow: 0 8px 24px rgba(31, 41, 55, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    main, .bar {
+      width: min(1280px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .bar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: center;
+      padding: 18px 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    p {
+      margin: 0;
+    }
+
+    button {
+      min-height: 38px;
+      padding: 0 14px;
+      border: 1px solid #b8c2d2;
+      border-radius: 6px;
+      background: #ffffff;
+      color: var(--text);
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: #8fa0b8;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    main {
+      padding: 24px 0 48px;
+    }
+
+    .target {
+      color: var(--muted);
+      overflow-wrap: anywhere;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .metric, .panel, .result {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .metric {
+      min-height: 86px;
+      padding: 14px;
+    }
+
+    .label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .value {
+      font-size: 18px;
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+
+    .panel {
+      padding: 18px;
+      margin-bottom: 18px;
+    }
+
+    .finding-list {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .finding-list li {
+      margin: 8px 0;
+    }
+
+    .result {
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .result-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+
+    .severity {
+      display: inline-flex;
+      align-items: center;
+      min-width: 78px;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 3px 10px;
+      font-size: 12px;
+      font-weight: 800;
+      border: 1px solid currentColor;
+    }
+
+    .severity.ok {
+      color: var(--ok);
+      background: #ecfdf3;
+    }
+
+    .severity.info {
+      color: var(--info);
+      background: #eff4ff;
+    }
+
+    .severity.warning {
+      color: var(--warning);
+      background: #fffaeb;
+    }
+
+    .severity.critical, .severity.error {
+      color: var(--critical);
+      background: #fff1f3;
+    }
+
+    .meta {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .observations {
+      margin: 10px 0;
+      padding-left: 20px;
+    }
+
+    pre {
+      overflow: auto;
+      margin: 12px 0;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #f8fafc;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: 13px;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      margin-top: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      background: #ffffff;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+      overflow-wrap: anywhere;
+    }
+
+    th {
+      background: #f8fafc;
+      font-weight: 700;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .empty {
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .error-banner {
+      display: none;
+      margin-bottom: 18px;
+      border: 1px solid #fda29b;
+      border-radius: 8px;
+      background: #fff1f3;
+      color: var(--critical);
+      padding: 12px 14px;
+      font-weight: 600;
+    }
+
+    .error-banner.visible {
+      display: block;
+    }
+
+    @media (max-width: 860px) {
+      .bar {
+        grid-template-columns: 1fr;
+      }
+
+      .toolbar {
+        justify-content: flex-start;
+      }
+
+      .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 560px) {
+      main, .bar {
+        width: min(100% - 20px, 1280px);
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .result-head {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="bar">
+      <div>
+        <h1>db-doctor Web UI</h1>
+        <p id="target" class="target">加载中...</p>
+      </div>
+      <div class="toolbar">
+        <button id="refreshButton" type="button">立即刷新</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div id="errorBanner" class="error-banner"></div>
+
+    <section class="grid" aria-label="状态概览">
+      <div class="metric">
+        <span class="label">最终结论</span>
+        <span id="finalSeverity" class="value">-</span>
+      </div>
+      <div class="metric">
+        <span class="label">刷新状态</span>
+        <span id="refreshState" class="value">-</span>
+      </div>
+      <div class="metric">
+        <span class="label">刷新轮次</span>
+        <span id="round" class="value">0</span>
+      </div>
+      <div class="metric">
+        <span class="label">最近完成</span>
+        <span id="lastFinishedAt" class="value">-</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>优先级最高的问题</h2>
+      <ol id="priorityFindings" class="finding-list"></ol>
+    </section>
+
+    <section>
+      <h2>检查详情</h2>
+      <div id="results"></div>
+    </section>
+  </main>
+
+  <script>
+    const nodes = {
+      target: document.getElementById("target"),
+      finalSeverity: document.getElementById("finalSeverity"),
+      refreshState: document.getElementById("refreshState"),
+      round: document.getElementById("round"),
+      lastFinishedAt: document.getElementById("lastFinishedAt"),
+      priorityFindings: document.getElementById("priorityFindings"),
+      results: document.getElementById("results"),
+      refreshButton: document.getElementById("refreshButton"),
+      errorBanner: document.getElementById("errorBanner")
+    };
+
+    let refreshSeconds = 5;
+
+    function create(tag, className, text) {
+      const element = document.createElement(tag);
+      if (className) {
+        element.className = className;
+      }
+      if (text !== undefined && text !== null) {
+        element.textContent = String(text);
+      }
+      return element;
+    }
+
+    function formatTime(value) {
+      if (!value) {
+        return "-";
+      }
+      return new Date(value).toLocaleString();
+    }
+
+    function severityName(value) {
+      return value ? String(value) : "INFO";
+    }
+
+    function severityClass(value) {
+      return "severity " + severityName(value).toLowerCase();
+    }
+
+    function clear(node) {
+      while (node.firstChild) {
+        node.removeChild(node.firstChild);
+      }
+    }
+
+    function showError(message) {
+      nodes.errorBanner.textContent = message || "";
+      nodes.errorBanner.classList.toggle("visible", Boolean(message));
+    }
+
+    function renderStatus(payload) {
+      showError("");
+      refreshSeconds = payload.refreshSeconds || refreshSeconds;
+      nodes.target.textContent = payload.target || "-";
+      nodes.round.textContent = String(payload.round || 0);
+      nodes.lastFinishedAt.textContent = formatTime(payload.lastFinishedAt);
+      nodes.refreshState.textContent = payload.refreshRunning || payload.manualRefreshQueued ? "刷新中" : "等待中";
+      nodes.refreshButton.disabled = Boolean(payload.refreshRunning || payload.manualRefreshQueued);
+
+      const summary = payload.summary;
+      if (!summary) {
+        nodes.finalSeverity.textContent = "-";
+        renderFindings([]);
+        clear(nodes.results);
+        nodes.results.appendChild(create("p", "empty", "等待首次刷新结果。"));
+        return;
+      }
+
+      nodes.finalSeverity.textContent = severityName(summary.finalSeverity);
+      renderFindings(summary.priorityFindings || []);
+      renderResults(summary.results || []);
+    }
+
+    function renderFindings(findings) {
+      clear(nodes.priorityFindings);
+      if (!findings.length) {
+        nodes.priorityFindings.appendChild(create("li", "empty", "未发现 WARNING 或 CRITICAL 级别问题。"));
+        return;
+      }
+      findings.forEach((finding) => {
+        nodes.priorityFindings.appendChild(create("li", "", finding));
+      });
+    }
+
+    function renderResults(results) {
+      clear(nodes.results);
+      if (!results.length) {
+        nodes.results.appendChild(create("p", "empty", "暂无检查结果。"));
+        return;
+      }
+
+      results.forEach((result) => {
+        const article = create("article", "result");
+        const head = create("div", "result-head");
+        const title = create("h3", "", result.title || result.id || "检查项");
+        const badge = create("span", severityClass(result.severity), severityName(result.severity));
+        head.appendChild(title);
+        head.appendChild(badge);
+        article.appendChild(head);
+
+        const meta = create("div", "meta");
+        meta.appendChild(create("span", "", "检查 ID: " + (result.id || "-")));
+        meta.appendChild(create("span", "", "结论: " + (result.conclusion || "-")));
+        if (result.error) {
+          meta.appendChild(create("span", "", "错误: " + result.error));
+        }
+        article.appendChild(meta);
+
+        if (result.observations && result.observations.length) {
+          const list = create("ul", "observations");
+          result.observations.forEach((item) => list.appendChild(create("li", "", item)));
+          article.appendChild(list);
+        }
+
+        if (result.queryResult) {
+          renderQueryResult(article, result.queryResult);
+        }
+
+        nodes.results.appendChild(article);
+      });
+    }
+
+    function renderQueryResult(container, queryResult) {
+      const meta = create("div", "meta");
+      meta.appendChild(create("span", "", "执行耗时: " + (queryResult.elapsedMs || 0) + " ms"));
+      meta.appendChild(create("span", "", "结果行数: " + ((queryResult.rows || []).length)));
+      container.appendChild(meta);
+
+      if (queryResult.sql) {
+        const pre = create("pre");
+        pre.appendChild(create("code", "", String(queryResult.sql).trim()));
+        container.appendChild(pre);
+      }
+
+      const rows = queryResult.rows || [];
+      const columns = queryResult.columns || [];
+      if (!rows.length || !columns.length) {
+        container.appendChild(create("p", "empty", "无结果行。"));
+        return;
+      }
+
+      const wrap = create("div", "table-wrap");
+      const table = create("table");
+      const thead = create("thead");
+      const headRow = create("tr");
+      columns.forEach((column) => headRow.appendChild(create("th", "", column)));
+      thead.appendChild(headRow);
+      table.appendChild(thead);
+
+      const tbody = create("tbody");
+      rows.forEach((row) => {
+        const tr = create("tr");
+        columns.forEach((column) => tr.appendChild(create("td", "", row[column] === null ? "" : row[column])));
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      wrap.appendChild(table);
+      container.appendChild(wrap);
+    }
+
+    async function loadStatus() {
+      try {
+        const response = await fetch("/api/status", { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error("HTTP " + response.status);
+        }
+        renderStatus(await response.json());
+      } catch (error) {
+        showError("无法读取 Web UI API: " + error.message);
+      }
+    }
+
+    async function refreshNow() {
+      nodes.refreshButton.disabled = true;
+      try {
+        await fetch("/api/refresh", { method: "POST", cache: "no-store" });
+      } catch (error) {
+        showError("无法触发刷新: " + error.message);
+      } finally {
+        setTimeout(loadStatus, 250);
+      }
+    }
+
+    nodes.refreshButton.addEventListener("click", refreshNow);
+    async function poll() {
+      await loadStatus();
+      setTimeout(poll, Math.max(1000, refreshSeconds * 1000));
+    }
+    poll();
+  </script>
+</body>
+</html>

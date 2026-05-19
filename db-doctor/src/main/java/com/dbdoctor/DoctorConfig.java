@@ -8,6 +8,7 @@ public class DoctorConfig {
     public Diagnosis diagnosis = new Diagnosis();
     public Thresholds thresholds = new Thresholds();
     public Whitelist whitelist = new Whitelist();
+    public Web web = new Web();
     public Report report = new Report();
 
     public void normalize() {
@@ -23,12 +24,20 @@ public class DoctorConfig {
         if (whitelist == null) {
             whitelist = new Whitelist();
         }
+        if (web == null) {
+            web = new Web();
+        }
         if (report == null) {
             report = new Report();
         }
 
         diagnosis.ddlLookbackMinutes = clamp(diagnosis.ddlLookbackMinutes, 1, 1440);
         diagnosis.intervalSeconds = clamp(diagnosis.intervalSeconds, 1, 86400);
+        web.port = clamp(web.port, 1, 65535);
+        web.refreshSeconds = clamp(web.refreshSeconds, 1, 86400);
+        if (isBlank(web.host)) {
+            web.host = "127.0.0.1";
+        }
         database.port = clamp(database.port, 1, 65535);
         database.connectTimeoutSeconds = clamp(database.connectTimeoutSeconds, 1, 60);
         database.queryTimeoutSeconds = clamp(database.queryTimeoutSeconds, 1, 300);
@@ -121,6 +130,13 @@ public class DoctorConfig {
         public boolean enabled = false;
         public List<String> users = new ArrayList<>();
         public List<String> clientIps = new ArrayList<>();
+    }
+
+    public static class Web {
+        public boolean enabled = false;
+        public String host = "127.0.0.1";
+        public int port = 8080;
+        public int refreshSeconds = 5;
     }
 
     public static class Report {

@@ -40,6 +40,40 @@ diagnosis:
 
 In continuous mode, `db-doctor` connects once, reuses that JDBC connection for every check round, and closes it only when the process is stopped. If the connection is killed externally, the tool reports check errors but does not voluntarily release and reacquire the connection between rounds.
 
+To run the embedded Web UI and refresh diagnosis data in place without generating a new HTML file every round:
+
+```bash
+java -jar target/db-doctor-1.0.0.jar -c config.example.yml --web --web-port 8080 --web-refresh-seconds 5
+```
+
+The Web UI exposes:
+
+```text
+http://127.0.0.1:8080/
+GET  /api/status
+GET  /api/summary
+POST /api/refresh
+```
+
+Web mode stores the latest diagnosis result in memory and the browser renders it from the JSON API. It does not call the report writer, so `report.html` and `report.json` are ignored while `--web` is active.
+
+To monitor multiple databases at the same time, start one process per config and assign each process a different port:
+
+```bash
+java -jar target/db-doctor-1.0.0.jar -c db1.yml --web --web-port 8081
+java -jar target/db-doctor-1.0.0.jar -c db2.yml --web --web-port 8082
+```
+
+The same options can be set in the config file:
+
+```yaml
+web:
+  enabled: true
+  host: "127.0.0.1"
+  port: 8080
+  refreshSeconds: 5
+```
+
 ## Safety
 
 - The tool only executes built-in diagnostic SQL.

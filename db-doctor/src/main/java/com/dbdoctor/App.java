@@ -35,6 +35,30 @@ public class App implements Callable<Integer> {
     )
     private Integer intervalSeconds;
 
+    @CommandLine.Option(
+            names = {"--web"},
+            description = "Start the embedded Web UI instead of writing report files."
+    )
+    private boolean web;
+
+    @CommandLine.Option(
+            names = {"--web-host"},
+            description = "Host address for Web UI. Overrides web.host."
+    )
+    private String webHost;
+
+    @CommandLine.Option(
+            names = {"--web-port"},
+            description = "Port for Web UI. Overrides web.port."
+    )
+    private Integer webPort;
+
+    @CommandLine.Option(
+            names = {"--web-refresh-seconds"},
+            description = "Seconds between Web UI diagnosis refreshes. Overrides web.refreshSeconds."
+    )
+    private Integer webRefreshSeconds;
+
     public static void main(String[] args) {
         int exitCode = new CommandLine(new App()).execute(args);
         System.exit(exitCode);
@@ -45,6 +69,9 @@ public class App implements Callable<Integer> {
         try {
             DoctorConfig config = ConfigLoader.load(configPath);
             applyCliOverrides(config);
+            if (config.web.enabled) {
+                return runWeb(config);
+            }
             if (config.diagnosis.continuous) {
                 return runContinuous(config);
             }
@@ -62,6 +89,18 @@ public class App implements Callable<Integer> {
         if (intervalSeconds != null) {
             config.diagnosis.intervalSeconds = intervalSeconds;
         }
+        if (web) {
+            config.web.enabled = true;
+        }
+        if (webHost != null) {
+            config.web.host = webHost;
+        }
+        if (webPort != null) {
+            config.web.port = webPort;
+        }
+        if (webRefreshSeconds != null) {
+            config.web.refreshSeconds = webRefreshSeconds;
+        }
         config.normalize();
     }
 
@@ -70,6 +109,11 @@ public class App implements Callable<Integer> {
         ReportWriter.ReportFiles files = new ReportWriter(config).write(summary);
         printConsoleSummary(summary, files);
         return summary.finalSeverity == Severity.CRITICAL ? 2 : 0;
+    }
+
+    private Integer runWeb(DoctorConfig config) throws Exception {
+        new WebServer(config).startAndBlock();
+        return 0;
     }
 
     private Integer runContinuous(DoctorConfig config) throws Exception {
