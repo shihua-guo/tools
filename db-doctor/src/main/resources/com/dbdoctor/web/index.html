@@ -29,6 +29,7 @@
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       line-height: 1.5;
+      scroll-behavior: smooth;
     }
 
     header {
@@ -152,6 +153,31 @@
 
     .finding-list li {
       margin: 8px 0;
+    }
+
+    .overview-list {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .overview-list li {
+      margin: 10px 0;
+    }
+
+    .overview-list a {
+      display: inline-flex;
+      gap: 10px;
+      align-items: flex-start;
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .overview-list a:hover .overview-text {
+      text-decoration: underline;
+    }
+
+    .overview-text {
+      overflow-wrap: anywhere;
     }
 
     .result {
@@ -278,6 +304,14 @@
       display: block;
     }
 
+    .top-link {
+      display: inline-block;
+      margin-top: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--info);
+    }
+
     @media (max-width: 860px) {
       .bar {
         grid-template-columns: 1fr;
@@ -308,7 +342,7 @@
   </style>
 </head>
 <body>
-  <header>
+  <header id="top">
     <div class="bar">
       <div>
         <h1>db-doctor Web UI</h1>
@@ -347,6 +381,11 @@
       <ol id="priorityFindings" class="finding-list"></ol>
     </section>
 
+    <section class="panel">
+      <h2>检查概览</h2>
+      <ol id="checkOverview" class="overview-list"></ol>
+    </section>
+
     <section>
       <h2>检查详情</h2>
       <div id="results"></div>
@@ -361,6 +400,7 @@
       round: document.getElementById("round"),
       lastFinishedAt: document.getElementById("lastFinishedAt"),
       priorityFindings: document.getElementById("priorityFindings"),
+      checkOverview: document.getElementById("checkOverview"),
       results: document.getElementById("results"),
       refreshButton: document.getElementById("refreshButton"),
       errorBanner: document.getElementById("errorBanner")
@@ -394,6 +434,15 @@
       return "severity " + severityName(value).toLowerCase();
     }
 
+    function safeId(value) {
+      const id = String(value || "").replace(/[^A-Za-z0-9_-]/g, "-");
+      return id || "item";
+    }
+
+    function anchorId(result) {
+      return "check-" + safeId(result.id || result.title);
+    }
+
     function clear(node) {
       while (node.firstChild) {
         node.removeChild(node.firstChild);
@@ -418,6 +467,7 @@
       if (!summary) {
         nodes.finalSeverity.textContent = "-";
         renderFindings([]);
+        renderOverview([]);
         clear(nodes.results);
         nodes.results.appendChild(create("p", "empty", "等待首次刷新结果。"));
         return;
@@ -425,7 +475,9 @@
 
       nodes.finalSeverity.textContent = severityName(summary.finalSeverity);
       renderFindings(summary.priorityFindings || []);
-      renderResults(summary.results || []);
+      const results = summary.results || [];
+      renderOverview(results);
+      renderResults(results);
     }
 
     function renderFindings(findings) {
@@ -439,6 +491,25 @@
       });
     }
 
+    function renderOverview(results) {
+      clear(nodes.checkOverview);
+      if (!results.length) {
+        nodes.checkOverview.appendChild(create("li", "empty", "暂无检查结果。"));
+        return;
+      }
+
+      results.forEach((result) => {
+        const item = create("li");
+        const link = create("a");
+        const text = create("span", "overview-text", (result.title || result.id || "检查项") + ": " + (result.conclusion || "-"));
+        link.href = "#" + anchorId(result);
+        link.appendChild(create("span", severityClass(result.severity), severityName(result.severity)));
+        link.appendChild(text);
+        item.appendChild(link);
+        nodes.checkOverview.appendChild(item);
+      });
+    }
+
     function renderResults(results) {
       clear(nodes.results);
       if (!results.length) {
@@ -448,6 +519,7 @@
 
       results.forEach((result) => {
         const article = create("article", "result");
+        article.id = anchorId(result);
         const head = create("div", "result-head");
         const title = create("h3", "", result.title || result.id || "检查项");
         const badge = create("span", severityClass(result.severity), severityName(result.severity));
@@ -473,6 +545,9 @@
           renderQueryResult(article, result.queryResult);
         }
 
+        const topLink = create("a", "top-link", "返回顶部");
+        topLink.href = "#top";
+        article.appendChild(topLink);
         nodes.results.appendChild(article);
       });
     }
