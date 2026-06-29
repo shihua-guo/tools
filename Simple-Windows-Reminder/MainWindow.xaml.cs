@@ -9,6 +9,7 @@ namespace Simple_Windows_Reminder;
 public partial class MainWindow : Window
 {
     private readonly Action _save;
+    private bool _isPositionAdjusting;
 
     public MainWindow(ReminderState state, Action save)
     {
@@ -29,6 +30,8 @@ public partial class MainWindow : Window
     public ReminderState State { get; }
 
     public ObservableCollection<ReminderItem> DisplayItems { get; }
+
+    public bool IsPositionAdjusting => _isPositionAdjusting;
 
     public void RefreshDisplayItems()
     {
@@ -54,14 +57,33 @@ public partial class MainWindow : Window
             Top = State.Top;
         }
 
-        NativeMethods.SetClickThrough(this, State.ClickThrough);
+        ApplyClickThrough();
     }
 
     private void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (!State.ClickThrough && e.ButtonState == MouseButtonState.Pressed)
+        if ((_isPositionAdjusting || !State.ClickThrough) && e.ButtonState == MouseButtonState.Pressed)
         {
             DragMove();
+        }
+    }
+
+    public void SetPositionAdjusting(bool enabled)
+    {
+        if (_isPositionAdjusting == enabled)
+        {
+            return;
+        }
+
+        _isPositionAdjusting = enabled;
+        Cursor = enabled ? Cursors.SizeAll : Cursors.Arrow;
+        RootBorder.BorderThickness = enabled ? new Thickness(1) : new Thickness(0);
+        RootBorder.BorderBrush = enabled ? System.Windows.Media.Brushes.DodgerBlue : null;
+        ApplyClickThrough();
+
+        if (enabled && !IsVisible)
+        {
+            Show();
         }
     }
 
@@ -74,7 +96,7 @@ public partial class MainWindow : Window
 
         if (e.PropertyName == nameof(ReminderState.ClickThrough))
         {
-            NativeMethods.SetClickThrough(this, State.ClickThrough);
+            ApplyClickThrough();
         }
 
         _save();
@@ -95,5 +117,10 @@ public partial class MainWindow : Window
 
         State.Left = Left;
         State.Top = Top;
+    }
+
+    private void ApplyClickThrough()
+    {
+        NativeMethods.SetClickThrough(this, State.ClickThrough && !_isPositionAdjusting);
     }
 }

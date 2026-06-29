@@ -22,6 +22,7 @@ public partial class App : Application
         _trayIcon = new TrayIconService(
             showSettings: ShowSettings,
             toggleOverlay: ToggleOverlay,
+            setPositionAdjusting: SetPositionAdjusting,
             exit: ShutdownApp);
     }
 
@@ -58,6 +59,11 @@ public partial class App : Application
         {
             _mainWindow.Show();
         }
+    }
+
+    private void SetPositionAdjusting(bool enabled)
+    {
+        _mainWindow?.SetPositionAdjusting(enabled);
     }
 
     private void SaveState()
