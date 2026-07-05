@@ -1,0 +1,6 @@
+mp4_asr_offline/__pycache__/
+mp4_asr_offline/**/__pycache__/
+mp4_asr_offline/build/
+mp4_asr_offline/dist/webui_state/
+mp4_asr_offline/dist/mp4_asr_webui.exe
+mp4_asr_offline/test/

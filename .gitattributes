@@ -1,0 +1,4 @@
+mp4_asr_offline/dist/**/*.dll filter=lfs diff=lfs merge=lfs -text
+mp4_asr_offline/dist/**/*.exe filter=lfs diff=lfs merge=lfs -text
+mp4_asr_offline/dist/**/*.lib filter=lfs diff=lfs merge=lfs -text
+mp4_asr_offline/dist/**/*.pyd filter=lfs diff=lfs merge=lfs -text

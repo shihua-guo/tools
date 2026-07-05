@@ -1,0 +1,21 @@
+# MP4 来源目录，可以写多个。
+inputs:
+  - C:\Videos\Input1
+  - D:\MoreVideos
+
+# 所有 mp3/txt/srt 和 progress.jsonl 都会输出到这里。
+output_dir: C:\Videos\Output
+
+# 内网机器上的 CapsWriter-Offline 根目录。
+capswriter_dir: C:\Users\shihu\Documents\software\CapsWriter-Offline-20260304\CapsWriter-Offline
+
+# 可留空；留空时默认使用 capswriter_dir\models\Qwen3-ASR\Qwen3-ASR-1.7B
+model_dir:
+
+recursive: true
+overwrite: false
+language: Chinese
+use_dml: false
+vulkan: false
+chunk_size: 80
+mp3_bitrate: 192k
