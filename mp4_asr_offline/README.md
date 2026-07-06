@@ -4,6 +4,8 @@
 
 当前版本仅用于中文普通话识别，配置中的 `language` 请保持 `Chinese`。
 
+`chunk_size` 建议保持 `30`。Qwen3-ASR 的 llama.cpp 后端不适合过长分段，本工具会拒绝超过 `40` 秒的配置，避免触发 `GGML_ASSERT(n_tokens_all <= cparams.n_batch)`。
+
 ## 目录内容
 
 便携发布目录应包含：

@@ -23,6 +23,8 @@ ALIGNER_FRONTEND = "qwen3_aligner_encoder_frontend.int4.onnx"
 ALIGNER_BACKEND = "qwen3_aligner_encoder_backend.int4.onnx"
 ALIGNER_LLM = "qwen3_aligner_llm.q4_k.gguf"
 DLL_HANDLES: list[Any] = []
+DEFAULT_CHUNK_SIZE = 30.0
+MAX_CHUNK_SIZE = 40.0
 
 
 @dataclass
@@ -36,7 +38,7 @@ class AppConfig:
     language: str = "Chinese"
     use_dml: bool = False
     vulkan: bool = False
-    chunk_size: float = 80.0
+    chunk_size: float = DEFAULT_CHUNK_SIZE
     mp3_bitrate: str = "192k"
 
 
@@ -196,6 +198,11 @@ def resolve_config(cfg: AppConfig) -> AppConfig:
     cfg.model_dir = cfg.model_dir.resolve()
     if cfg.chunk_size <= 0:
         raise ConfigError("chunk_size 必须大于 0")
+    if cfg.chunk_size > MAX_CHUNK_SIZE:
+        raise ConfigError(
+            f"chunk_size 不能超过 {MAX_CHUNK_SIZE:g} 秒。Qwen3-ASR 的 llama.cpp 后端在更长分段下容易触发 "
+            "GGML_ASSERT(n_tokens_all <= cparams.n_batch)，请改为 30 或 40。"
+        )
     if cfg.language.lower() != "chinese":
         raise ConfigError("当前工具仅支持中文普通话识别，请将 language 设置为 Chinese")
     return cfg

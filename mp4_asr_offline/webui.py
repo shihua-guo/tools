@@ -17,6 +17,7 @@ from urllib.parse import urlparse
 
 APP_TITLE = "MP4 ASR Offline WebUI"
 DEFAULT_PORT = 8765
+DEFAULT_CHUNK_SIZE = "30"
 
 
 def app_dir() -> Path:
@@ -91,7 +92,7 @@ def default_config() -> dict[str, Any]:
         "overwrite": cfg.get("overwrite", False),
         "use_dml": cfg.get("use_dml", False),
         "vulkan": cfg.get("vulkan", False),
-        "chunk_size": cfg.get("chunk_size", "80"),
+        "chunk_size": cfg.get("chunk_size", DEFAULT_CHUNK_SIZE),
         "mp3_bitrate": cfg.get("mp3_bitrate", "192k"),
     }
 
@@ -110,7 +111,7 @@ def yaml_from_payload(payload: dict[str, Any]) -> str:
             "language: Chinese",
             f"use_dml: {str(bool(payload.get('use_dml', False))).lower()}",
             f"vulkan: {str(bool(payload.get('vulkan', False))).lower()}",
-            f"chunk_size: {payload.get('chunk_size') or 80}",
+            f"chunk_size: {payload.get('chunk_size') or DEFAULT_CHUNK_SIZE}",
             f"mp3_bitrate: {payload.get('mp3_bitrate') or '192k'}",
             "",
         ]
