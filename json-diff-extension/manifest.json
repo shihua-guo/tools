@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "JSON Diff Comparator",
+  "version": "1.0.0",
+  "description": "Compare two JSON documents, sort keys, highlight field changes, and summarize the result.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "JSON Diff Comparator"
+  }
+}

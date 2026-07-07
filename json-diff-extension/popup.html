@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JSON Diff Comparator</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="toolbar">
+        <h1>JSON 对比</h1>
+        <div class="actions">
+          <button id="sampleBtn" type="button" class="secondary">示例</button>
+          <button id="clearBtn" type="button" class="secondary">清空</button>
+          <button id="compareBtn" type="button" class="primary">确定</button>
+        </div>
+      </header>
+
+      <section class="inputs" aria-label="JSON 输入">
+        <label class="editor">
+          <span>修改前 JSON</span>
+          <textarea id="beforeInput" spellcheck="false" placeholder='{"name":"demo","enabled":true}'></textarea>
+        </label>
+        <label class="editor">
+          <span>修改后 JSON</span>
+          <textarea id="afterInput" spellcheck="false" placeholder='{"enabled":false,"name":"demo"}'></textarea>
+        </label>
+      </section>
+
+      <section id="message" class="message" hidden></section>
+
+      <section class="summary" aria-label="变化结论">
+        <h2>变化结论</h2>
+        <div id="summaryText" class="summary-text">请输入两段 JSON 后点击确定。</div>
+        <div class="stats">
+          <span id="addedCount">新增 0</span>
+          <span id="removedCount">删除 0</span>
+          <span id="changedCount">修改 0</span>
+          <span id="sameCount">未变 0</span>
+        </div>
+      </section>
+
+      <section class="results" aria-label="排序和差异结果">
+        <article class="panel">
+          <h2>排序后：修改前</h2>
+          <pre id="beforeOutput" class="json-output"></pre>
+        </article>
+        <article class="panel">
+          <h2>排序后：修改后</h2>
+          <pre id="afterOutput" class="json-output"></pre>
+        </article>
+      </section>
+
+      <section class="changes" aria-label="变化字段">
+        <h2>变化字段明细</h2>
+        <div id="changeList" class="change-list empty">暂无变化。</div>
+      </section>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>
