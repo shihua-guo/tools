@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
+using WpfKeyEventArgs = System.Windows.Input.KeyEventArgs;
 
 namespace Simple_Windows_Reminder;
 
@@ -30,7 +31,7 @@ public partial class SettingsWindow : Window
         AddTask();
     }
 
-    private void TaskInput_OnKeyDown(object sender, KeyEventArgs e)
+    private void TaskInput_OnKeyDown(object sender, WpfKeyEventArgs e)
     {
         if (e.Key == Key.Enter)
         {

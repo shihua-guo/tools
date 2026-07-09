@@ -1,0 +1,317 @@
+{
+  "capturedAt": "2026-06-26T08:00:27.9014015+08:00",
+  "base": "http://192.168.2.2",
+  "notes": [
+    "secondary management IP changed to 100.100.100.100 via local maintenance CLI",
+    "static DNS configured to 192.168.2.1"
+  ],
+  "data": {
+    "apinfo/get": {
+      "msg": "",
+      "data": {
+        "networkId": {
+          "networkId": "dev_30:0D:9E:48:80:AD_1593675064",
+          "networkName": "EWEB_300D9E4880AD",
+          "groupName": "default",
+          "groupId": "0"
+        },
+        "master": {
+          "mac": "C4:70:AB:22:3C:2D",
+          "sn": "G1QH5P1132393",
+          "status": "Connected",
+          "devModel": "RG-MA2820(T)",
+          "software": "AP_RGOS 11.9(4)B1B01",
+          "ip": "192.168.2.2"
+        },
+        "currentIp": "192.168.110.244",
+        "devMode": {
+          "meshMode": "unknown",
+          "autoJoin": "true",
+          "dev_init_setted": 1,
+          "forwardMode": "AP",
+          "networktype": "ctc",
+          "relayMode": "wiredBridge",
+          "acEnable": "true"
+        },
+        "capacity": {
+          "master_priority": "3273",
+          "ac_master_priority": "6273",
+          "ip_mac_bind_num": "64",
+          "unite_config": {
+            "section": [
+              {
+                "module": "wireless",
+                "dev_support": "true"
+              },
+              {
+                "module": "network_group",
+                "dev_support": "true"
+              },
+              {
+                "module": "eweb_password",
+                "dev_support": "true"
+              }
+            ]
+          },
+          "wireless": {
+            "radiolist": [
+              {
+                "ext_ifname": "ra",
+                "disabled": "0",
+                "11acsupport": "1",
+                "txpower_min": "1",
+                "apcli_ifname": "apcli",
+                "band_support": "5G",
+                "txpower_max": "631",
+                "antenna_tx_num": "3",
+                "AntCtrl": "2T2R",
+                "name": "MT7615D_1_1",
+                "index": "1",
+                "antenna_rx_num": "3",
+                "devname": "MT7615D.1.1",
+                "sta_limit_max": "none",
+                "wlan_num": "8"
+              },
+              {
+                "ext_ifname": "rax",
+                "11acsupport": "0",
+                "G_BAND_256QAM": "1",
+                "apcli_ifname": "apclix",
+                "txpower_min": "1",
+                "band_support": "2.4G",
+                "index": "2",
+                "txpower_max": "500",
+                "antenna_tx_num": "3",
+                "AntCtrl": "2T2R",
+                "name": "MT7615D_1_2",
+                "disabled": "0",
+                "antenna_rx_num": "3",
+                "devname": "MT7615D.1.2",
+                "sta_limit_max": "none",
+                "wlan_num": "8"
+              }
+            ],
+            "radio_num": "2",
+            "sdk": "bcom",
+            "support5g": "true",
+            "support2g": "true",
+            "ap_wlan_num": "16",
+            "cn_5g_exp": "1",
+            "macaddr_offset": "2",
+            "ap_sta_max": "100"
+          },
+          "dev_model": "RG-MA2820(T)",
+          "sdk_version": "2.0.0",
+          "dev_type": "ehr",
+          "max_ap_num": "32",
+          "panel_port_num": "4",
+          "ap_master_priority": "3273",
+          "router_master_priority": "5273",
+          "support_wifi": "1",
+          "eth_port": {
+            "sw_number": "1",
+            "switch": [
+              {
+                "sw_name": "switch0",
+                "index": "1",
+                "to_cpu_mac": "0",
+                "to_cpu": "6"
+              }
+            ],
+            "interface_number": "4",
+            "version": "1.0.0",
+            "interface": [
+              {
+                "mac": "0",
+                "switch_port": "0",
+                "index": "1",
+                "switch_enable": "1",
+                "manage": "1",
+                "wan_enable": "1",
+                "switch_index": "1",
+                "poe_direct": "none",
+                "name": "WAN",
+                "wan_name": "WAN",
+                "speed": "1000",
+                "used": "wan",
+                "panel_name": "WAN",
+                "poe_enable": "0"
+              },
+              {
+                "mac": "0",
+                "switch_port": "1",
+                "index": "2",
+                "switch_enable": "1",
+                "manage": "0",
+                "switch_index": "1",
+                "poe_direct": "none",
+                "name": "LAN",
+                "speed": "1000",
+                "used": "lan",
+                "panel_name": "LAN2",
+                "poe_enable": "0"
+              },
+              {
+                "mac": "0",
+                "switch_port": "1",
+                "index": "3",
+                "switch_enable": "1",
+                "manage": "0",
+                "switch_index": "1",
+                "poe_direct": "none",
+                "name": "LAN",
+                "speed": "1000",
+                "used": "lan",
+                "panel_name": "LAN3",
+                "poe_enable": "0"
+              },
+              {
+                "mac": "0",
+                "switch_port": "1",
+                "index": "4",
+                "switch_enable": "1",
+                "manage": "0",
+                "switch_index": "1",
+                "poe_direct": "none",
+                "name": "LAN",
+                "speed": "1000",
+                "used": "lan",
+                "panel_name": "LAN4",
+                "poe_enable": "0"
+              }
+            ]
+          },
+          "gateway": {
+            "content_audit": "0",
+            "pptp_client": "0",
+            "nfpp": "0",
+            "app_auth": "0",
+            "flow_control": "1",
+            "l2tp_client": "0",
+            "l2tp_server": "0",
+            "ipsec": "0",
+            "pptp_server": "0",
+            "pppoe_server": "0",
+            "guest_auth": "0"
+          },
+          "eth": {
+            "eth_num": "1",
+            "eth_dev": [
+              {
+                "dev_name": "eth0"
+              }
+            ]
+          },
+          "forwardMode": "AP",
+          "max_sta_num": "200"
+        },
+        "hostname": "Ruijie",
+        "roles": [
+          "ehr",
+          "EW1200G-PRO",
+          "wifi_bwlist",
+          "wifi_ap",
+          "wifi_radio",
+          "wifi_setting",
+          "wifi_wirelan",
+          "wifi_sta",
+          "egEnable",
+          "flow_control",
+          "acEnable",
+          "master",
+          "AP"
+        ],
+        "sysinfo": {
+          "master_priority": "5273",
+          "eLinkAPStatus": "running",
+          "hardware_version": "1.0",
+          "showAccelerateTab": false,
+          "showProvince": false,
+          "showIpv6Tab": false,
+          "description": "RG-MA2820(T)-<qishan-ctc-main>",
+          "acEnable": "true",
+          "trueHardware": "2.00",
+          "elinksync": "on",
+          "devHost": "router.ctc",
+          "product_class": "RG-MA2820(T)",
+          "max_sta_num": "200",
+          "manufacturer": "Ruijie Networks Co., Ltd",
+          "language": "zh_cn",
+          "ostype": "openwrt",
+          "true_hardware_version": "MA_1.0(1)B4,Release(09211922),Revision(ff1d4f06b)/,2.00",
+          "oui": "300D9E",
+          "productType": "ehr",
+          "support_wifi": "1",
+          "max_ap_num": "32",
+          "product_id": "60010081",
+          "egEnable": "true",
+          "sys_mac": "C4:70:AB:22:3C:2D",
+          "software_version": "AP_RGOS 11.9(4)B1B01",
+          "auth_ip": "192.168.2.1",
+          "autoJoin": "true",
+          "model": "RG-MA2820(T)",
+          "forwardMode": "AP",
+          "config_version": "1.0",
+          "wan_ip": "172.30.103.91",
+          "serial_num": "G1QH5P1132393"
+        }
+      },
+      "code": "0"
+    },
+    "network/info": {
+      "msg": "",
+      "data": {
+        "currentTime": 117,
+        "lan": [
+          {
+            "proto": "bridge",
+            "ipaddr": "192.168.2.2",
+            "netmask": "255.255.255.0",
+            "dhcpRelayServer": "0.0.0.0",
+            "ignore": "off",
+            "dhcpEthEnd": "192.168.2.250",
+            "leasetime": 1440,
+            "dhcpEthStart": "192.168.2.100",
+            "wireless": "yes",
+            "conflict": "false",
+            "limit": "254",
+            "enblLanFirewall": 0,
+            "enblDhcpSrv": "0"
+          }
+        ],
+        "configTime": 1663599201,
+        "trueVersion": "1.0",
+        "wan6Mode": 2,
+        "version": "1.0",
+        "lanNum": 1,
+        "wan": [
+          {
+            "wandetect": "unUsed",
+            "proto": "dhcp",
+            "macaddr": "C4:70:AB:22:3C:2D",
+            "mtu": 1500
+          }
+        ],
+        "wanNum": 1,
+        "configId": 0
+      },
+      "code": 0
+    },
+    "dev/networkConnect": {
+      "msg": "",
+      "data": {
+        "message": "未获取到dns地址信息",
+        "errorCode": 18002,
+        "connnected": "false"
+      },
+      "code": 0
+    },
+    "system/develop_mode_get": {
+      "msg": "",
+      "data": {
+        "developMode": "0"
+      },
+      "code": 0
+    }
+  }
+}

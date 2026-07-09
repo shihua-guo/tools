@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using System.Windows.Media;
+using MediaBrush = System.Windows.Media.Brush;
 
 namespace Simple_Windows_Reminder;
 
@@ -90,17 +91,17 @@ public sealed class ReminderState : INotifyPropertyChanged
     }
 
     [JsonIgnore]
-    public Brush TextBrush
+    public MediaBrush TextBrush
     {
         get
         {
             try
             {
-                return (Brush)new BrushConverter().ConvertFromString(TextColor)!;
+                return (MediaBrush)new BrushConverter().ConvertFromString(TextColor)!;
             }
             catch
             {
-                return Brushes.White;
+                return System.Windows.Media.Brushes.White;
             }
         }
     }

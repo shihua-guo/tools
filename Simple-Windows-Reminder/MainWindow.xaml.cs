@@ -76,7 +76,7 @@ public partial class MainWindow : Window
         }
 
         _isPositionAdjusting = enabled;
-        Cursor = enabled ? Cursors.SizeAll : Cursors.Arrow;
+        Cursor = enabled ? System.Windows.Input.Cursors.SizeAll : System.Windows.Input.Cursors.Arrow;
         RootBorder.BorderThickness = enabled ? new Thickness(1) : new Thickness(0);
         RootBorder.BorderBrush = enabled ? System.Windows.Media.Brushes.DodgerBlue : null;
         ApplyClickThrough();

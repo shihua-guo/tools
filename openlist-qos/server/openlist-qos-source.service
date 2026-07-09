@@ -1,0 +1,14 @@
+[Unit]
+Description=Dedicated source identity for OpenList QoS
+After=network-online.target docker.service
+Wants=network-online.target docker.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/sbin/openlist-qos-source daemon
+ExecStop=/usr/local/sbin/openlist-qos-source remove
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

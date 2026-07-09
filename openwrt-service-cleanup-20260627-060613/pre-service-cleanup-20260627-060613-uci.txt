@@ -1,0 +1,2396 @@
+package AdGuardHome
+
+config AdGuardHome 'AdGuardHome'
+	option enabled '0'
+	option httpport '3000'
+	option redirect 'none'
+	option configpath '/etc/AdGuardHome.yaml'
+	option workdir '/etc/AdGuardHome'
+	option logfile '/tmp/AdGuardHome.log'
+	option verbose '0'
+	option binpath '/usr/bin/AdGuardHome'
+	option hostsmd5 '5504bb04bd01cb0e340aee9e2ae065b2'
+	list old_redirect 'none'
+	list old_port '1745'
+	list old_enabled '0'
+
+package cordcloud
+
+config cordcloud 'config'
+	option proxy_port '7992'
+	option tproxy_port '7895'
+	option mixed_port '7893'
+	option socks_port '7991'
+	option http_port '7990'
+	option dns_port '7974'
+	option enable '1'
+	option update '0'
+	option en_mode 'fake-ip'
+	option auto_update '0'
+	option auto_update_time '0'
+	option cn_port '9190'
+	option dashboard_forward_ssl '0'
+	option rule_source '0'
+	option enable_custom_dns '0'
+	option ipv6_enable '0'
+	option ipv6_dns '0'
+	option enable_custom_clash_rules '0'
+	option other_rule_auto_update '0'
+	option core_version 'linux-mipsle-softfloat'
+	option enable_redirect_dns '2'
+	option servers_if_update '0'
+	option disable_masq_cache '1'
+	option servers_update '0'
+	option log_level '0'
+	option proxy_mode 'rule'
+	option intranet_allowed '1'
+	option disable_udp_quic '1'
+	option lan_ac_mode '0'
+	option operation_mode 'fake-ip'
+	option enable_rule_proxy '0'
+	option redirect_dns '0'
+	option cachesize_dns '0'
+	option filter_aaaa_dns '0'
+	option small_flash_memory '0'
+	option interface_name '0'
+	option log_size '1024'
+	option tolerance '0'
+	option store_fakeip '0'
+	option custom_fallback_filter '0'
+	option custom_fakeip_filter '1'
+	option custom_host '0'
+	option custom_name_policy '0'
+	option append_wan_dns '0'
+	option stream_auto_select '0'
+	option bypass_gateway_compatible '0'
+	option github_address_mod '0'
+	option urltest_address_mod '0'
+	option urltest_interval_mod '0'
+	option delay_start '50'
+	option router_self_proxy '1'
+	option release_branch 'master'
+	option smart_enable '0'
+	option dashboard_type 'Official'
+	option yacd_type 'Meta'
+	option append_default_dns '0'
+	option enable_respect_rules '1'
+	option chnr_custom_url 'https://ispip.clang.cn/all_cn.txt'
+	option chnr6_custom_url 'https://ispip.clang.cn/all_cn_ipv6.txt'
+	option custom_rules_enable '0'
+	option custom_rules_provider '0'
+	option secure_mode '1'
+	option dashboard_password 'mmvgKG6u'
+	option restart '1'
+	option core_type 'Meta'
+	option china_ip_route '0'
+	option default_resolvfile '/tmp/resolv.conf.d/resolv.conf.auto'
+	option dnsmasq_noresolv '1'
+	option stack_type 'system'
+	option disable_quic_go_gso '0'
+	option update_on_start '0'
+	option skip_proxy_address '0'
+	option lan_interface_name '0'
+	option geo_auto_update '0'
+	option geoip_auto_update '0'
+	option geosite_auto_update '0'
+	option geoasn_auto_update '0'
+	option auto_restart '0'
+	option auto_restart_week_time '1'
+	option auto_restart_day_time '0'
+	option fakeip_range '0'
+	option custom_fakeip_filter_mode 'blacklist'
+	option find_process_mode '0'
+	option global_client_fingerprint '0'
+	option geodata_loader '0'
+	option enable_geoip_dat '0'
+	option enable_meta_sniffer '1'
+	option enable_meta_sniffer_pure_ip '1'
+	option enable_meta_sniffer_custom '0'
+	option auto_smart_switch '0'
+	option smart_strategy '0'
+	option smart_prefer_asn '0'
+	option smart_enable_lgbm '0'
+	option smart_collect '0'
+	option lgbm_auto_update '0'
+
+config dns_servers
+	option type 'udp'
+	option ip '114.114.114.114'
+	option enabled '1'
+	option group 'default'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option type 'udp'
+	option ip '119.29.29.29'
+	option enabled '1'
+	option group 'default'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option group 'nameserver'
+	option type 'udp'
+	option ip '114.114.114.114'
+	option enabled '1'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option type 'udp'
+	option ip '223.5.5.5'
+	option enabled '1'
+	option group 'default'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option group 'nameserver'
+	option type 'udp'
+	option ip '119.29.29.29'
+	option enabled '1'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option group 'nameserver'
+	option type 'udp'
+	option ip '119.28.28.28'
+	option enabled '0'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option group 'nameserver'
+	option type 'udp'
+	option ip '223.5.5.5'
+	option enabled '0'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option type 'https'
+	option ip 'doh.pub/dns-query'
+	option group 'nameserver'
+	option enabled '1'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option type 'https'
+	option ip 'dns.alidns.com/dns-query'
+	option group 'nameserver'
+	option enabled '1'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip '9.9.9.9'
+	option type 'udp'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip '149.112.112.112'
+	option type 'udp'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip '2620:fe::fe'
+	option type 'udp'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip '2620:fe::9'
+	option type 'udp'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip '8.8.8.8'
+	option type 'udp'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip '8.8.4.4'
+	option type 'udp'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip '2001:4860:4860::8888'
+	option type 'udp'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip '2001:4860:4860::8844'
+	option type 'udp'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip '2001:da8::666'
+	option type 'udp'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'dns.quad9.net'
+	option type 'tls'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'dns.google'
+	option type 'tls'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip '1.1.1.1'
+	option type 'tls'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'jp.tiar.app'
+	option type 'tls'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'dot.tiar.app'
+	option type 'tls'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'dns.quad9.net/dns-query'
+	option type 'https'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '1'
+	option group 'fallback'
+	option ip 'dns.google/dns-query'
+	option type 'https'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '1'
+	option group 'fallback'
+	option ip 'dns.cloudflare.com/dns-query'
+	option type 'https'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip '1.1.1.1/dns-query'
+	option type 'https'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'public.dns.iij.jp/dns-query'
+	option type 'https'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'jp.tiar.app/dns-query'
+	option type 'https'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'jp.tiarap.org/dns-query'
+	option type 'https'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option type 'https'
+	option ip 'doh.dnslify.com/dns-query'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'dns.twnic.tw/dns-query'
+	option type 'https'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'dns.oszx.co/dns-query'
+	option type 'https'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'doh.applied-privacy.net/query'
+	option type 'https'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'dnsforge.de/dns-query'
+	option type 'https'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'doh.ffmuc.net/dns-query'
+	option type 'https'
+	option disable_ipv6 '0'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'doh.mullvad.net/dns-query'
+	option type 'https'
+	option disable_ipv6 '0'
+
+config config_overwrite
+	option name 'default'
+	option enable '0'
+	option url 'https://cdn.jsdelivr.net/gh/vernesong/CordCloud@dev/luci-app-cordcloud/root/etc/cordcloud/overwrite/default'
+	option update_days 'off'
+	option update_hour 'off'
+	option type 'http'
+	option order '1'
+
+package cordcloud-opkg
+
+config cordcloud 'config'
+	option proxy_port '7992'
+	option tproxy_port '7895'
+	option mixed_port '7893'
+	option socks_port '7991'
+	option http_port '7990'
+	option dns_port '7974'
+	option enable '0'
+	option update '0'
+	option en_mode 'fake-ip'
+	option auto_update '0'
+	option auto_update_time '0'
+	option cn_port '9190'
+	option dashboard_forward_ssl '0'
+	option rule_source '0'
+	option enable_custom_dns '0'
+	option ipv6_enable '0'
+	option ipv6_dns '0'
+	option enable_custom_clash_rules '0'
+	option other_rule_auto_update '0'
+	option core_version '0'
+	option enable_redirect_dns '1'
+	option servers_if_update '0'
+	option disable_masq_cache '1'
+	option servers_update '0'
+	option log_level '0'
+	option proxy_mode 'rule'
+	option intranet_allowed '1'
+	option enable_udp_proxy '1'
+	option disable_udp_quic '1'
+	option lan_ac_mode '0'
+	option operation_mode 'fake-ip'
+	option enable_rule_proxy '0'
+	option redirect_dns '0'
+	option cachesize_dns '0'
+	option filter_aaaa_dns '0'
+	option small_flash_memory '0'
+	option interface_name '0'
+	option common_ports '0'
+	option log_size '1024'
+	option tolerance '0'
+	option store_fakeip '0'
+	option custom_fallback_filter '0'
+	option custom_fakeip_filter '1'
+	option custom_host '0'
+	option custom_name_policy '0'
+	option append_wan_dns '0'
+	option stream_auto_select '0'
+	option bypass_gateway_compatible '0'
+	option github_address_mod '0'
+	option urltest_address_mod '0'
+	option urltest_interval_mod '0'
+	option delay_start '0'
+	option router_self_proxy '1'
+	option release_branch 'master'
+	option smart_enable '0'
+	option dashboard_type 'Official'
+	option yacd_type 'Meta'
+	option append_default_dns '0'
+	option enable_respect_rules '1'
+	option geo_custom_url 'https://testingcf.jsdelivr.net/gh/alecthw/mmdb_china_ip_list@release/lite/Country.mmdb'
+	option geosite_custom_url 'https://testingcf.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geosite.dat'
+	option geoip_custom_url 'https://testingcf.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geoip.dat'
+	option geoasn_custom_url 'https://testingcf.jsdelivr.net/gh/xishang0128/geoip@release/GeoLite2-ASN.mmdb'
+	option chnr_custom_url 'https://ispip.clang.cn/all_cn.txt'
+	option chnr6_custom_url 'https://ispip.clang.cn/all_cn_ipv6.txt'
+	option custom_rules_enable '0'
+	option custom_rules_template 'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_Online.ini'
+	option custom_rules_emoji '0'
+	option custom_rules_udp '1'
+	option custom_rules_skip_cert '1'
+	option custom_rules_sort '0'
+	option custom_rules_node_type '0'
+	option custom_rules_provider '0'
+	option github_raw_proxy '1'
+
+config dns_servers
+	option type 'udp'
+	option ip '114.114.114.114'
+	option enabled '1'
+	option group 'default'
+
+config dns_servers
+	option type 'udp'
+	option ip '119.29.29.29'
+	option enabled '1'
+	option group 'default'
+
+config dns_servers
+	option group 'nameserver'
+	option type 'udp'
+	option ip '114.114.114.114'
+	option enabled '1'
+
+config dns_servers
+	option type 'udp'
+	option ip '223.5.5.5'
+	option enabled '1'
+	option group 'default'
+
+config dns_servers
+	option group 'nameserver'
+	option type 'udp'
+	option ip '119.29.29.29'
+	option enabled '1'
+
+config dns_servers
+	option group 'nameserver'
+	option type 'udp'
+	option ip '119.28.28.28'
+	option enabled '0'
+
+config dns_servers
+	option group 'nameserver'
+	option type 'udp'
+	option ip '223.5.5.5'
+	option enabled '0'
+
+config dns_servers
+	option type 'https'
+	option ip 'doh.pub/dns-query'
+	option group 'nameserver'
+	option enabled '1'
+
+config dns_servers
+	option type 'https'
+	option ip 'dns.alidns.com/dns-query'
+	option group 'nameserver'
+	option enabled '1'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip '9.9.9.9'
+	option type 'udp'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip '149.112.112.112'
+	option type 'udp'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip '2620:fe::fe'
+	option type 'udp'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip '2620:fe::9'
+	option type 'udp'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip '8.8.8.8'
+	option type 'udp'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip '8.8.4.4'
+	option type 'udp'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip '2001:4860:4860::8888'
+	option type 'udp'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip '2001:4860:4860::8844'
+	option type 'udp'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip '2001:da8::666'
+	option type 'udp'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'dns.quad9.net'
+	option type 'tls'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'dns.google'
+	option type 'tls'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip '1.1.1.1'
+	option type 'tls'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'jp.tiar.app'
+	option type 'tls'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'dot.tiar.app'
+	option type 'tls'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'dns.quad9.net/dns-query'
+	option type 'https'
+
+config dns_servers
+	option enabled '1'
+	option group 'fallback'
+	option ip 'dns.google/dns-query'
+	option type 'https'
+
+config dns_servers
+	option enabled '1'
+	option group 'fallback'
+	option ip 'dns.cloudflare.com/dns-query'
+	option type 'https'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip '1.1.1.1/dns-query'
+	option type 'https'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'public.dns.iij.jp/dns-query'
+	option type 'https'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'jp.tiar.app/dns-query'
+	option type 'https'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'jp.tiarap.org/dns-query'
+	option type 'https'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option type 'https'
+	option ip 'doh.dnslify.com/dns-query'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'dns.twnic.tw/dns-query'
+	option type 'https'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'dns.oszx.co/dns-query'
+	option type 'https'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'doh.applied-privacy.net/query'
+	option type 'https'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'dnsforge.de/dns-query'
+	option type 'https'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'doh.ffmuc.net/dns-query'
+	option type 'https'
+
+config dns_servers
+	option enabled '0'
+	option group 'fallback'
+	option ip 'doh.mullvad.net/dns-query'
+	option type 'https'
+
+config config_overwrite
+	option name 'default'
+	option enable '0'
+	option url 'https://cdn.jsdelivr.net/gh/vernesong/CordCloud@dev/luci-app-cordcloud/root/etc/cordcloud/overwrite/default'
+	option update_days 'off'
+	option update_hour 'off'
+	option type 'http'
+	option order '1'
+
+package ddns
+
+config ddns 'global'
+	option ddns_dateformat '%F %R'
+	option ddns_loglines '250'
+	option upd_privateip '0'
+
+config service 'myddns_ipv4'
+	option service_name 'dyndns.org'
+	option lookup_host 'yourhost.example.com'
+	option domain 'yourhost.example.com'
+	option username 'your_username'
+	option password 'your_password'
+	option interface 'wan'
+	option ip_source 'network'
+	option ip_network 'wan'
+
+config service 'myddns_ipv6'
+	option update_url 'http://[USERNAME]:[PASSWORD]@your.provider.net/nic/update?hostname=[DOMAIN]&myip=[IP]'
+	option lookup_host 'yourhost.example.com'
+	option domain 'yourhost.example.com'
+	option username 'your_username'
+	option password 'your_password'
+	option use_ipv6 '1'
+	option interface 'wan6'
+	option ip_source 'network'
+	option ip_network 'wan6'
+
+package dhcp
+
+config dnsmasq
+	option domainneeded '1'
+	option localise_queries '1'
+	option rebind_protection '1'
+	option rebind_localhost '1'
+	option local '/lan/'
+	option domain 'lan'
+	option expandhosts '1'
+	option cachesize '0'
+	option authoritative '1'
+	option readethers '1'
+	option leasefile '/tmp/dhcp.leases'
+	option localservice '1'
+	option ednspacket_max '1232'
+	option localuse '1'
+	option port '53'
+	option noresolv '0'
+	option resolvfile '/tmp/resolv.conf.d/resolv.conf.auto'
+
+config dhcp 'lan'
+	option interface 'lan'
+	option start '100'
+	option limit '100'
+	option leasetime '12h'
+	option dhcpv4 'server'
+	option dhcpv6 'server'
+	option ra 'server'
+	option ra_slaac '1'
+	list ra_flags 'managed-config'
+	list ra_flags 'other-config'
+	option ra_management '1'
+	option ra_default '1'
+	option force '1'
+	option ignore '0'
+
+config dhcp 'wan'
+	option interface 'wan'
+	option ignore '1'
+
+config odhcpd 'odhcpd'
+	option maindhcp '0'
+	option leasefile '/tmp/hosts/odhcpd'
+	option leasetrigger '/usr/sbin/odhcpd-update'
+	option loglevel '4'
+
+config host
+	option name 'DESKTOP-RK5OD0D'
+	option ip '192.168.2.200'
+	list mac '00:CF:E0:2D:BA:89'
+	option duid '0001000130a81a8400cfe02dba89'
+
+config host
+	option name 'DESKTOP-LPOHT43'
+	option ip '192.168.2.177'
+	option mac 'F0:6E:0B:C6:6F:15'
+
+config host
+	option ip '192.168.2.2'
+	option mac 'C4:70:AB:22:3C:2D'
+
+config host
+	option name 'DESKTOP-RK5OD0D'
+	option duid '0001000130A81A8400CFE02DBA89'
+	option mac '00:CF:E0:2D:BA:89'
+
+config host
+	option name 'Xiaomi-13'
+	option ip '192.168.2.211'
+	option mac '56:EE:33:CF:B2:89'
+
+config host
+	option name 'DESKTOP-LPOHT43'
+	option duid '0001000128100C3CF06E0BC66F15'
+	option mac 'F0:6E:0B:C6:6F:15'
+
+config host
+	option name 'Tmall-Genie'
+	option ip '192.168.2.229'
+	option mac '38:D2:CA:67:51:E9'
+
+config host
+	option ip '192.168.2.140'
+	option mac '00:E0:4C:36:35:AB'
+
+config host
+	option duid '000300016A4A8DFE92B2'
+	option mac '6A:4A:8D:FE:92:B2'
+
+config domain
+	option name 'server.home'
+	option ip '192.168.2.200'
+
+package dropbear
+
+config dropbear
+	option PasswordAuth 'off'
+	option Port '5624'
+	option RootPasswordAuth 'off'
+
+package etherwake
+
+config etherwake 'setup'
+	option pathes '/usr/bin/etherwake /usr/bin/ether-wake'
+	option sudo 'off'
+	option broadcast 'off'
+
+config target
+	option name 'example'
+	option mac '11:22:33:44:55:66'
+	option password 'AABBCCDDEEFF'
+	option wakeonboot 'off'
+
+package firewall
+
+config defaults
+	option syn_flood '1'
+	option input 'REJECT'
+	option output 'ACCEPT'
+	option forward 'REJECT'
+	option fullcone '1'
+	option brcmfullcone '0'
+	option flow_offloading '1'
+	option flow_offloading_hw '1'
+
+config zone
+	option name 'lan'
+	list network 'lan'
+	option input 'ACCEPT'
+	option output 'ACCEPT'
+	option forward 'ACCEPT'
+
+config zone
+	option name 'wan'
+	option input 'REJECT'
+	option output 'ACCEPT'
+	option forward 'REJECT'
+	option fullcone4 '1'
+	option fullcone6 '0'
+	option masq '1'
+	option mtu_fix '1'
+	list network 'wan'
+	list network 'wan6'
+	list network 'usb'
+	list network 'Ueth1'
+	list network 'Ueth2'
+
+config forwarding
+	option src 'lan'
+	option dest 'wan'
+
+config rule
+	option name 'Allow-DHCP-Renew'
+	option src 'wan'
+	option proto 'udp'
+	option dest_port '68'
+	option target 'ACCEPT'
+	option family 'ipv4'
+
+config rule
+	option name 'Allow-Ping'
+	option src 'wan'
+	option proto 'icmp'
+	option icmp_type 'echo-request'
+	option family 'ipv4'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-IGMP'
+	option src 'wan'
+	option proto 'igmp'
+	option family 'ipv4'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-DHCPv6'
+	option src 'wan'
+	option proto 'udp'
+	option dest_port '546'
+	option family 'ipv6'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-MLD'
+	option src 'wan'
+	option proto 'icmp'
+	option src_ip 'fe80::/10'
+	list icmp_type '130/0'
+	list icmp_type '131/0'
+	list icmp_type '132/0'
+	list icmp_type '143/0'
+	option family 'ipv6'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-ICMPv6-Input'
+	option src 'wan'
+	option proto 'icmp'
+	list icmp_type 'echo-request'
+	list icmp_type 'echo-reply'
+	list icmp_type 'destination-unreachable'
+	list icmp_type 'packet-too-big'
+	list icmp_type 'time-exceeded'
+	list icmp_type 'bad-header'
+	list icmp_type 'unknown-header-type'
+	list icmp_type 'router-solicitation'
+	list icmp_type 'neighbour-solicitation'
+	list icmp_type 'router-advertisement'
+	list icmp_type 'neighbour-advertisement'
+	option limit '1000/sec'
+	option family 'ipv6'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-ICMPv6-Forward'
+	option src 'wan'
+	option dest '*'
+	option proto 'icmp'
+	list icmp_type 'echo-request'
+	list icmp_type 'echo-reply'
+	list icmp_type 'destination-unreachable'
+	list icmp_type 'packet-too-big'
+	list icmp_type 'time-exceeded'
+	list icmp_type 'bad-header'
+	list icmp_type 'unknown-header-type'
+	option limit '1000/sec'
+	option family 'ipv6'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-IPSec-ESP'
+	option src 'wan'
+	option dest 'lan'
+	option proto 'esp'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-ISAKMP'
+	option src 'wan'
+	option dest 'lan'
+	option dest_port '500'
+	option proto 'udp'
+	option target 'ACCEPT'
+
+config include 'passwall'
+	option type 'script'
+	option path '/var/etc/passwall.include'
+	option reload '1'
+
+config include 'passwall_server'
+	option type 'script'
+	option path '/var/etc/passwall_server.include'
+	option reload '1'
+
+config include 'shadowsocksr'
+	option type 'script'
+	option path '/var/etc/shadowsocksr.include'
+	option reload '1'
+
+config include 'cordcloud'
+	option type 'script'
+	option path '/var/etc/cordcloud.include'
+
+package fstab
+
+config global
+	option anon_swap '0'
+	option anon_mount '1'
+	option auto_swap '1'
+	option auto_mount '1'
+	option delay_root '5'
+	option check_fs '0'
+
+package luci
+
+config core 'main'
+	option lang 'zh_cn'
+	option mediaurlbase '/luci-static/argon'
+	option resourcebase '/luci-static/resources'
+	option ubuspath '/ubus/'
+
+config extern 'flash_keep'
+	option uci '/etc/config/'
+	option dropbear '/etc/dropbear/'
+	option openvpn '/etc/openvpn/'
+	option passwd '/etc/passwd'
+	option opkg '/etc/opkg.conf'
+	option firewall '/etc/firewall.user'
+	option uploads '/lib/uci/upload/'
+
+config internal 'languages'
+	option zh_cn '简体中文 (Chinese Simplified)'
+
+config internal 'sauth'
+	option sessionpath '/tmp/luci-sessions'
+	option sessiontime '3600'
+
+config internal 'ccache'
+	option enable '1'
+
+config internal 'themes'
+	option Argon '/luci-static/argon'
+	option Bootstrap '/luci-static/bootstrap'
+	option BootstrapDark '/luci-static/bootstrap-dark'
+	option BootstrapLight '/luci-static/bootstrap-light'
+
+config internal 'apply'
+	option rollback '90'
+	option holdoff '4'
+	option timeout '5'
+	option display '1.5'
+
+config internal 'diag'
+	option dns 'openwrt.org'
+	option ping 'openwrt.org'
+	option route 'openwrt.org'
+
+package microsocks
+
+config microsocks 'config'
+	option enabled '0'
+	option listenip '127.0.0.1'
+	option port '1080'
+	option auth_once '0'
+
+package mosdns
+
+config mosdns 'config'
+	option enabled '0'
+	option listen_port '5335'
+	option geo_auto_update '0'
+	option geo_update_week_time '*'
+	option geo_update_day_time '2'
+	option configfile '/var/etc/mosdns.json'
+	option log_level 'info'
+	option log_file '/var/log/mosdns.log'
+	option cache '1'
+	option concurrent '2'
+	option idle_timeout '30'
+	option minimal_ttl '0'
+	option maximum_ttl '0'
+	option enable_pipeline '1'
+	option insecure_skip_verify '0'
+	option dns_leak '0'
+	option cloudflare '0'
+	option listen_port_api '9091'
+	option bootstrap_dns '119.29.29.29'
+	list remote_dns 'tls://8.8.8.8'
+	option redirect '1'
+	option prefer_ipv4 '1'
+	option enable_ecs_remote '0'
+	option cache_size '8000'
+	option lazy_cache_ttl '86400'
+	option dump_file '0'
+
+package network
+
+config interface 'loopback'
+	option device 'lo'
+	option proto 'static'
+	option ipaddr '127.0.0.1'
+	option netmask '255.0.0.0'
+
+config globals 'globals'
+	option ula_prefix 'fdd8:72ef:9a1e::/48'
+	option packet_steering '1'
+
+config device
+	option name 'br-lan'
+	option type 'bridge'
+	list ports 'lan1'
+	list ports 'lan2'
+
+config interface 'lan'
+	option device 'br-lan'
+	option proto 'static'
+	option ipaddr '192.168.2.1'
+	option netmask '255.255.255.0'
+	option ip6assign '64'
+
+config interface 'wan'
+	option device 'wan'
+	option proto 'dhcp'
+	option metric '20'
+	option dns_metric '20'
+
+config interface 'wan6'
+	option device 'wan'
+	option proto 'dhcpv6'
+	option disabled '1'
+
+config interface 'usb'
+	option proto 'dhcp'
+	option device 'usb0'
+
+config interface 'Ueth1'
+	option proto 'dhcp'
+	option device 'eth1'
+	option metric '10'
+	option dns_metric '10'
+
+config interface 'Ueth2'
+	option proto 'dhcp'
+	option device 'eth2'
+
+package openlist-qos
+
+config main 'main'
+	option enabled '1'
+	option interface 'br-lan'
+	option bulk_ip '192.168.2.210'
+	option capacity_kbit '10500'
+	option minimum_kbit '512'
+	option trigger_kbit '2000'
+	option release_kbit '1200'
+	option trigger_seconds '4'
+	option reserve_kbit '1000'
+	option release_seconds '6'
+	option poll_seconds '2'
+	option burst_kbytes '32'
+
+package openssl
+
+config provider 'legacy'
+	option enabled '1'
+
+package passwall
+
+config global
+	option enabled '0'
+	option socks_enabled '0'
+	option tcp_node_socks_port '1070'
+	option filter_proxy_ipv6 '1'
+	option dns_shunt 'chinadns-ng'
+	option dns_mode 'tcp'
+	option remote_dns '1.1.1.1'
+	list smartdns_remote_dns 'https://1.1.1.1/dns-query'
+	option use_default_dns 'direct'
+	option chinadns_ng_default_tag 'none'
+	option dns_redirect '1'
+	option use_direct_list '1'
+	option use_proxy_list '1'
+	option use_block_list '1'
+	option use_gfw_list '1'
+	option chn_list 'direct'
+	option tcp_proxy_mode 'proxy'
+	option udp_proxy_mode 'proxy'
+	option localhost_proxy '1'
+	option client_proxy '1'
+	option acl_enable '0'
+	option log_tcp '0'
+	option log_udp '0'
+	option loglevel 'error'
+	option trojan_loglevel '4'
+	option log_chinadns_ng '0'
+
+config global_haproxy
+	option balancing_enable '0'
+
+config global_delay
+	option start_daemon '1'
+	option start_delay '60'
+
+config global_forwarding
+	option tcp_no_redir_ports 'disable'
+	option udp_no_redir_ports 'disable'
+	option tcp_proxy_drop_ports 'disable'
+	option udp_proxy_drop_ports '443'
+	option tcp_redir_ports '22,25,53,143,465,587,853,993,995,80,443'
+	option udp_redir_ports '1:65535'
+	option accept_icmp '0'
+	option use_nft '0'
+	option tcp_proxy_way 'redirect'
+	option ipv6_tproxy '0'
+
+config global_xray
+	option sniffing_override_dest '0'
+
+config global_singbox
+	option sniff_override_destination '0'
+	option geoip_path '/usr/share/singbox/geoip.db'
+	option geoip_url 'https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.db'
+	option geosite_path '/usr/share/singbox/geosite.db'
+	option geosite_url 'https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.db'
+
+config global_other
+	option auto_detection_time 'tcping'
+	option show_node_info '0'
+
+config global_rules
+	option auto_update '0'
+	option chnlist_update '1'
+	option chnroute_update '1'
+	option chnroute6_update '1'
+	option gfwlist_update '1'
+	option geosite_update '0'
+	option geoip_update '0'
+	list gfwlist_url 'https://fastly.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/gfw.txt'
+	list chnroute_url 'https://ispip.clang.cn/all_cn.txt'
+	list chnroute_url 'https://fastly.jsdelivr.net/gh/gaoyifan/china-operator-ip@ip-lists/china.txt'
+	list chnroute6_url 'https://ispip.clang.cn/all_cn_ipv6.txt'
+	list chnroute6_url 'https://fastly.jsdelivr.net/gh/gaoyifan/china-operator-ip@ip-lists/china6.txt'
+	list chnlist_url 'https://fastly.jsdelivr.net/gh/felixonmars/dnsmasq-china-list/accelerated-domains.china.conf'
+	list chnlist_url 'https://fastly.jsdelivr.net/gh/felixonmars/dnsmasq-china-list/apple.china.conf'
+	option v2ray_location_asset '/usr/share/v2ray/'
+
+config global_app
+	option singbox_file '/usr/bin/sing-box'
+	option xray_file '/usr/bin/xray'
+	option hysteria_file '/usr/bin/hysteria'
+	option chinadns_ng '/usr/bin/chinadns-ng'
+
+config global_subscribe
+	option filter_keyword_mode '1'
+	list filter_discard_list '距离下次重置剩余'
+	list filter_discard_list '套餐到期'
+	list filter_discard_list '过期时间'
+	list filter_discard_list '剩余流量'
+	list filter_discard_list 'QQ群'
+	list filter_discard_list '官网'
+
+config nodes 'myshunt'
+	option remarks '分流总节点'
+	option type 'Xray'
+	option protocol '_shunt'
+	option DirectGame '_direct'
+	option ProxyGame '_default'
+	option AIGC '_default'
+	option Streaming '_default'
+	option Proxy '_default'
+	option Direct '_direct'
+	option default_node '_direct'
+	option domainStrategy 'IPOnDemand'
+
+config shunt_rules 'DirectGame'
+	option remarks 'DirectGame'
+	option domain_list 'regexp:\.cm.steampowered.com$
+regexp:\.steamserver.net$
+geosite:category-games@cn'
+	option ip_list '103.10.124.0/24
+103.10.125.0/24
+103.28.54.0/24
+146.66.152.0/24
+146.66.155.0/24
+153.254.86.0/24
+155.133.224.0/23
+155.133.226.0/24
+155.133.227.0/24
+155.133.230.0/24
+155.133.232.0/24
+155.133.233.0/24
+155.133.234.0/24
+155.133.236.0/23
+155.133.238.0/24
+155.133.239.0/24
+155.133.240.0/23
+155.133.245.0/24
+155.133.246.0/24
+155.133.248.0/24
+155.133.249.0/24
+155.133.250.0/24
+155.133.251.0/24
+155.133.252.0/24
+155.133.253.0/24
+155.133.254.0/24
+155.133.255.0/24
+162.254.192.0/24
+162.254.193.0/24
+162.254.194.0/23
+162.254.195.0/24
+162.254.196.0/24
+162.254.197.0/24
+162.254.198.0/24
+162.254.199.0/24
+185.25.182.0/24
+185.25.183.0/24
+190.217.33.0/24
+192.69.96.0/22
+205.185.194.0/24
+205.196.6.0/24
+208.64.200.0/24
+208.64.201.0/24
+208.64.202.0/24
+208.64.203.0/24
+208.78.164.0/22'
+
+config shunt_rules 'ProxyGame'
+	option remarks 'ProxyGame'
+	option domain_list 'geosite:category-games
+domain:store.steampowered.com'
+
+config shunt_rules 'AIGC'
+	option remarks 'AIGC'
+	option domain_list 'geosite:category-ai-chat-!cn
+domain:apple-relay.apple.com'
+
+config shunt_rules 'Streaming'
+	option remarks 'Streaming'
+	option domain_list 'geosite:netflix
+geosite:disney'
+
+config shunt_rules 'Proxy'
+	option remarks 'Proxy'
+	option domain_list 'geosite:geolocation-!cn'
+	option ip_list '149.154.160.0/20
+91.108.4.0/22
+91.108.56.0/24
+109.239.140.0/24
+67.198.55.0/24
+8.8.4.4
+8.8.8.8
+208.67.222.222
+208.67.220.220
+1.1.1.1
+1.1.1.2
+1.0.0.1
+9.9.9.9
+149.112.112.112
+2001:67c:4e8::/48
+2001:b28:f23c::/48
+2001:b28:f23d::/48
+2001:b28:f23f::/48
+2001:b28:f242::/48
+2001:4860:4860::8888
+2001:4860:4860::8844
+2606:4700:4700::1111
+2606:4700:4700::1001'
+
+config shunt_rules 'Direct'
+	option remarks 'Direct'
+	option domain_list 'geosite:cn'
+	option ip_list '223.5.5.5/32
+223.6.6.6/32
+119.29.29.29/32
+180.76.76.76/32
+114.114.114.114/32
+114.114.115.115/32
+1.12.12.12/32
+120.53.53.53/32
+geoip:cn
+geoip:private'
+
+package passwall_server
+
+config global 'global'
+	option enable '0'
+
+package rpcd
+
+config rpcd
+	option socket '/var/run/ubus/ubus.sock'
+	option timeout '30'
+
+config login
+	option username 'root'
+	option password '$p$root'
+	list read '*'
+	list write '*'
+
+package shadowsocks-libev
+
+config ss_local
+	option disabled '1'
+	option server 'sss0'
+	option local_address '0.0.0.0'
+	option local_port '1080'
+	option timeout '30'
+
+config ss_tunnel
+	option disabled '1'
+	option server 'sss0'
+	option local_address '0.0.0.0'
+	option local_port '1090'
+	option tunnel_address 'example.com:80'
+	option mode 'tcp_and_udp'
+	option timeout '60'
+
+config ss_redir 'hi'
+	option disabled '1'
+	option server 'sss0'
+	option local_address '0.0.0.0'
+	option local_port '1100'
+	option mode 'tcp_and_udp'
+	option timeout '60'
+	option fast_open '1'
+	option verbose '1'
+	option reuse_port '1'
+
+config ss_redir 'hj'
+	option disabled '1'
+	option server 'sss0'
+	option local_address '0.0.0.0'
+	option local_port '1100'
+	option mode 'tcp_and_udp'
+	option timeout '60'
+	option fast_open '1'
+	option verbose '1'
+	option reuse_port '1'
+
+config ss_rules 'ss_rules'
+	option disabled '1'
+	option redir_tcp 'hi'
+	option redir_udp 'hi'
+	option src_default 'checkdst'
+	option dst_default 'bypass'
+	option local_default 'checkdst'
+	list src_ips_forward '192.168.1.4'
+	list dst_ips_forward '8.8.8.8'
+
+config server 'sss0'
+	option disabled '1'
+	option server '192.168.1.3'
+	option server_port '9001'
+	option password '********'
+	option method 'aes-256-cfb'
+
+config ss_server
+	option disabled '1'
+	option server_port '9001'
+	option password '********'
+	option method 'aes-256-cfb'
+
+package shadowsocksr
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65304'
+	option tls_host 'dl.shcttwbgp.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey '9b4f5b0ea6222112528dbc7e1b686d04'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '上海电信转台湾BGP[M][Trojan][倍率:1]'
+	option server 'swllswb.kq8m9a23.top'
+	option switch_enable '1'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65300'
+	option tls_host 'dl.shctjpntt3.cc.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey '42fb28554cbc00ce12d1260c8675c4b9'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '上海电信转日本NTT3[M][Trojan][倍率:1]'
+	option server '114.28.137.69'
+	option switch_enable '1'
+	option ip '114.28.137.69'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65300'
+	option tls_host 'dl.shctjpntt5.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey '60123a32f0f019808485b63d1f7b3c8e'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '上海电信转日本NTT5[M][Trojan][倍率:1]'
+	option server 'shcnt2make5.kq8m9a23.top'
+	option switch_enable '1'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65400'
+	option tls_host 'dl.shctjpntt6.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey 'de16608c8f8ed8b345e4cd1d5bb586f7'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '上海电信转日本NTT6[M][Trojan][倍率:1]'
+	option server 'shcnt2make5.kq8m9a23.top'
+	option switch_enable '1'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65306'
+	option tls_host 'dl.shctjpntt7.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey '70a02ac93d808d707f603d983dc2be9f'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '上海电信转日本NTT7[M][Trojan][倍率:1]'
+	option server 'swllswb.kq8m9a23.top'
+	option switch_enable '1'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65300'
+	option tls_host 'dl.shctjpntt.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey '0aac73fa4652af0bfc08f9cc5098f521'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '上海电信转日本NTT[M][Trojan][倍率:1]'
+	option server 'swllswb.kq8m9a23.top'
+	option switch_enable '1'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65302'
+	option tls_host 'cdnjp.douyinvod.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey 'e08e51345f648ddc0c92c99ccc86df4f'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '日本NTT2[M][Trojan][测试][倍率:0.3]'
+	option server 'ntnt2.kq8m9a23.top'
+	option switch_enable '1'
+	option ip '216.247.110.38'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65302'
+	option tls_host 'cdnjp.douyinvod.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey 'ebfdd4cae82d66920ece403b159d544a'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '日本NTT[M][Trojan][测试][倍率:0.3]'
+	option server 'ascjp.ntt1.ccddn4.icu'
+	option switch_enable '1'
+	option ip '216.247.110.37'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65501'
+	option tls_host 'dl.sg2.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey 'f3e65f3ef849410fa044f0d059c2e762'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '深港专线2[Trojan][倍率:2.5]'
+	option server 'smas-aka5.kq8m9a23.top'
+	option switch_enable '1'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65523'
+	option tls_host 'dl.sg3.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey 'd7983274e47c00b5db4aaaef1ba6b015'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '深港专线3[Trojan][倍率:2.5]'
+	option server 'smas-aka5.kq8m9a23.top'
+	option switch_enable '1'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65022'
+	option tls_host 'dl.sg6.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey '141a4ec4730e54181857a6cb7066effb'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '深港专线6[Trojan][倍率:2.5]'
+	option server 'smas-aka5.kq8m9a23.top'
+	option switch_enable '1'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65025'
+	option tls_host 'dl.sg7.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey '5dac42a707202bcef2f6aebf0cb14e5e'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '深港专线7[Trojan][倍率:2.5]'
+	option server 'smas-aka5.kq8m9a23.top'
+	option switch_enable '1'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65522'
+	option tls_host 'dl.sg1.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey '3cebae59c73ce4eb2f62fbd03d5648b2'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '深港专线[Trojan][倍率:2.5]'
+	option server 'smas-aka5.kq8m9a23.top'
+	option switch_enable '1'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65301'
+	option tls_host 'dl.shctusgs3.cc.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey '4f81bd6b08b2ab2be87f1095cfc2f25c'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '上海电信转美国GS3[Trojan][倍率:1]'
+	option server '114.28.137.69'
+	option switch_enable '1'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65501'
+	option tls_host 'dl.shctusgs5.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey 'e1e0977740634b4c17e4d6ff8e96200a'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '上海电信转美国GS5[Trojan][倍率:1]'
+	option server 'shcnt2make5.kq8m9a23.top'
+	option switch_enable '1'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65401'
+	option tls_host 'dl.shctusgs6.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey '623e52853963251d76a97495d772f91b'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '上海电信转美国GS6[Trojan][倍率:1]'
+	option server 'shcnt2make5.kq8m9a23.top'
+	option switch_enable '1'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65305'
+	option tls_host 'dl.shctusgs7.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey '1813e34824670839ce7d4fbc7635aee7'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '上海电信转美国GS7[Trojan][倍率:1]'
+	option server 'swllswb.kq8m9a23.top'
+	option switch_enable '1'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65301'
+	option tls_host 'dl.shctusgs.cc.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey 'c4cb8b7d8f5d2bed882596b828e2980f'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '上海电信转美国GS[Trojan][倍率:1]'
+	option server 'swllswb.kq8m9a23.top'
+	option switch_enable '1'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65509'
+	option tls_host 'dl.sgusan.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey 'f91a948bd1117c560df27e3e0f067cf4'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '深港专线转美国AN[M][Trojan][倍率:2.5]'
+	option server 'smas-aka5.kq8m9a23.top'
+	option switch_enable '1'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65403'
+	option tls_host 'dl.shctukcv.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey '4d865f3caf1ef46a7efe451081f3c273'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '上海电信转英国CV[Trojan][倍率:1]'
+	option server 'shcnt2make5.kq8m9a23.top'
+	option switch_enable '1'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65303'
+	option tls_host 'dl.shctkrkt.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey '10e4d7d83f9a3d122a268ca050619072'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '上海电信转韩国KT[M][Trojan][倍率:1]'
+	option server '114.28.137.69'
+	option switch_enable '1'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65303'
+	option tls_host 'dl.shcthkhgc.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey 'b1108252380684065ed38f97bab226fc'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '上海电信转香港HGC[M][Trojan][倍率:1]'
+	option server 'swllswb.kq8m9a23.top'
+	option switch_enable '1'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65302'
+	option tls_host 'dl.shcthkhkc2.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey '930d9f829fb6f036b96f2fe27e3fa873'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '上海电信转香港HKC2[M][Trojan][倍率:1]'
+	option server '114.28.137.69'
+	option switch_enable '1'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65500'
+	option tls_host 'dl.shcthkc4.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey 'e4f5988e8e2a0e2cc5d384921a85aae0'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '上海电信转香港HKC4[M][Trojan][倍率:1]'
+	option server 'shcnt2make5.kq8m9a23.top'
+	option switch_enable '1'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65402'
+	option tls_host 'dl.shcthkc5.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey 'f4a0e71f7fb62242293940a5dbc18213'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '上海电信转香港HKC5[M][Trojan][倍率:1]'
+	option server 'shcnt2make5.kq8m9a23.top'
+	option switch_enable '1'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65303'
+	option tls_host 'dl.shcthkhkc6.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey 'cdbb9e6a2f490a927bab483c42abef53'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '上海电信转香港HKC6[M][Trojan][倍率:1]'
+	option server 'swllswb.kq8m9a23.top'
+	option switch_enable '1'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65302'
+	option tls_host 'dl.shcthkhkc.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey 'd43c6de13bbdc30b6284a225bdc86a1e'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '上海电信转香港HKC[M][Trojan][倍率:1]'
+	option server 'swllswb.kq8m9a23.top'
+	option switch_enable '1'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65301'
+	option tls_host 'dl.bgp3.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey '41ce17f114a9e860a88f0299b7f9a29a'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '深港专线转香港BGP3[M][Trojan][倍率:2.5]'
+	option server 'smas-aka5.kq8m9a23.top'
+	option switch_enable '1'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65300'
+	option tls_host 'dl.bgp4.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey 'e040cfd3027ecc97dcbafd7aa43da3ca'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '深港专线转香港BGP4[M][Trojan][倍率:2.5]'
+	option server 'smas-aka5.kq8m9a23.top'
+	option switch_enable '1'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65109'
+	option tls_host 'dl.bgp7.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey 'a42d3e9cc2b6e902ea395e9849ab8379'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '深港专线转香港BGP7[M][Trojan][倍率:2.5]'
+	option server 'smas-aka5.kq8m9a23.top'
+	option switch_enable '1'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65110'
+	option tls_host 'dl.bgp8.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey '740bcaca9ce56cc4eb7cdce373b3c535'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '深港专线转香港BGP8[M][Trojan][倍率:2.5]'
+	option server 'smas-aka5.kq8m9a23.top'
+	option switch_enable '1'
+
+config servers
+	option insecure '0'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65401'
+	option tls_host 'dl.sghgcbb3.cc.tjcct.xyz'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey 'df00bbc0e11d47f7adefeb4a9e986963'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '深港专线转香港HGC商宽4[Trojan][倍率:2.5]'
+	option server 'smas-aka5.kq8m9a23.top'
+	option switch_enable '1'
+
+config global
+	option global_server 'nil'
+	option netflix_server 'nil'
+	option netflix_proxy '0'
+	option threads '0'
+	option run_mode 'router'
+	option dports '2'
+	option pdnsd_enable '1'
+	option tunnel_forward '8.8.4.4:53'
+	option monitor_enable '1'
+	option enable_switch '1'
+	option switch_time '667'
+	option switch_timeout '5'
+	option switch_try_count '3'
+	option shunt_dns '1'
+	option gfwlist_url 'https://fastly.jsdelivr.net/gh/YW5vbnltb3Vz/domain-list-community@release/gfwlist.txt'
+	option chnroute_url 'https://ispip.clang.cn/all_cn.txt'
+	option nfip_url 'https://fastly.jsdelivr.net/gh/QiuSimons/Netflix_IP/NF_only.txt'
+	option adblock_url 'https://anti-ad.net/anti-ad-for-dnsmasq.conf'
+
+config server_subscribe
+	option proxy '0'
+	option auto_update '1'
+	option auto_update_week_time '*'
+	option auto_update_day_time '2'
+	option auto_update_min_time '0'
+	option filter_words '过期时间/剩余流量/QQ群/官网/防失联地址/回国'
+	option allow_insecure '0'
+	option switch '1'
+	list subscribe_url 'https://www.c7sugkhg556.org/kgcclmdl/EqSmoUpWKWKzU7NyPYNdwbJWgchFm2kZWQG3WDZIfG1OVD64FkyZK4TBKP4rMoIL?j7v9=4'
+
+config access_control
+	option lan_ac_mode '0'
+	option router_proxy '1'
+	list wan_fw_ips '149.154.160.0/20'
+	list wan_fw_ips '67.198.55.0/24'
+	list wan_fw_ips '91.108.4.0/22'
+	list wan_fw_ips '91.108.56.0/22'
+	list wan_fw_ips '109.239.140.0/24'
+	list wan_fw_ips '8.8.8.8'
+	list wan_fw_ips '1.1.1.1'
+	list Interface 'lan'
+
+config socks5_proxy
+	option server 'nil'
+	option local_port '1080'
+
+config server_global
+	option enable_server '1'
+
+config global_xray_fragment
+	option fragment '0'
+	option noise '0'
+
+config servers
+	option insecure '1'
+	option type 'v2ray'
+	option v2ray_protocol 'trojan'
+	option local_port '1234'
+	option kcp_param '--nocomp'
+	option server_port '65304'
+	option tls_host 'dl.shcttwbgp2.baidu.com'
+	option password 'dcc558c6-3b2d-38f3-885a-a6e99fe0a926'
+	option transport 'raw'
+	option hashkey 'dfeac9e2831227f94e6c84d0516ee51c'
+	option tcp_guise 'none'
+	option grouphashkey '3a8fdc86b494f25b8208ebe50fa98571'
+	option tls '1'
+	option alias '上海电信转台湾BGP2[M][Trojan][倍率:1]'
+	option server 'shcnt2make5.kq8m9a23.top'
+	option switch_enable '1'
+
+config server_config
+	option enable '1'
+	option type 'socks5'
+	option server_port '13920'
+	option username 'clawdbot'
+	option password '11223344'
+
+package sing-box
+
+config sing-box 'main'
+	option enabled '0'
+	option user 'sing-box'
+	option conffile '/etc/sing-box/config.json'
+	option workdir '/usr/share/sing-box'
+
+package socat
+
+config socat 'http'
+	option enable '0'
+	option SocatOptions '-d -d TCP6-LISTEN:8000,fork TCP4:192.168.1.20:80'
+	option user 'nobody'
+
+package system
+
+config system
+	option hostname 'OpenWrt'
+	option timezone 'CST-8'
+	option ttylogin '0'
+	option log_size '64'
+	option urandom_seed '0'
+	option compat_version '1.1'
+	option zonename 'Asia/Shanghai'
+
+config timeserver 'ntp'
+	option enabled '1'
+	option enable_server '0'
+	list server 'ntp.aliyun.com'
+	list server 'ntp.ustc.edu.cn'
+	list server 'cn.ntp.org.cn'
+	list server 'cn.pool.ntp.org'
+
+config led
+	option sysfs 'amber:lan1'
+	option trigger 'none'
+	option default '1'
+
+config led
+	option sysfs 'amber:lan2'
+	option trigger 'none'
+	option default '1'
+
+config led
+	option sysfs 'amber:wan'
+	option trigger 'none'
+	option default '1'
+
+config led
+	option sysfs 'blue:status'
+	option trigger 'none'
+	option default '1'
+
+config led
+	option sysfs 'mt76-phy0'
+	option trigger 'none'
+	option default '1'
+
+config led
+	option sysfs 'mt76-phy1'
+	option trigger 'none'
+	option default '1'
+
+config led
+	option sysfs 'red:status'
+	option trigger 'none'
+	option default '1'
+
+config led
+	option sysfs 'yellow:status'
+	option trigger 'none'
+	option default '1'
+
+package turboacc
+
+config turboacc 'config'
+	option sw_flow '1'
+	option hw_flow '1'
+	option sfe_flow '1'
+	option fullcone_nat '1'
+	option fullcone6 '0'
+	option hw_wed '0'
+	option bbr_cca '1'
+
+package ucitrack
+
+config network
+	option init 'network'
+	list affects 'dhcp'
+
+config wireless
+	list affects 'network'
+
+config firewall
+	option init 'firewall'
+	list affects 'luci-splash'
+	list affects 'qos'
+	list affects 'miniupnpd'
+
+config olsr
+	option init 'olsrd'
+
+config dhcp
+	option init 'dnsmasq'
+	list affects 'odhcpd'
+
+config odhcpd
+	option init 'odhcpd'
+
+config dropbear
+	option init 'dropbear'
+
+config httpd
+	option init 'httpd'
+
+config fstab
+	option exec '/sbin/block mount'
+
+config qos
+	option init 'qos'
+
+config system
+	option init 'led'
+	option exec '/etc/init.d/log reload'
+	list affects 'luci_statistics'
+	list affects 'dhcp'
+
+config luci_splash
+	option init 'luci_splash'
+
+config ntpclient
+	option init 'ntpclient'
+
+config samba
+	option init 'samba'
+
+config tinyproxy
+	option init 'tinyproxy'
+
+config AdGuardHome
+	option init 'AdGuardHome'
+
+config upnpd
+	option init 'miniupnpd'
+
+config watchcat
+	option init 'watchcat'
+
+config uuplugin
+	option init 'uuplugin_luci'
+
+config socat
+	option init 'luci_socat'
+
+config mosdns
+	option init 'mosdns'
+
+config passwall
+	option init 'passwall'
+
+config passwall_server
+	option init 'passwall_server'
+
+config shadowsocksr
+	option init 'shadowsocksr'
+
+config turboacc
+	option init 'turboacc'
+
+config cordcloud
+	option init 'cordcloud'
+
+package uhttpd
+
+config uhttpd 'main'
+	list listen_http '0.0.0.0:80'
+	list listen_http '[::]:80'
+	list listen_https '0.0.0.0:443'
+	list listen_https '[::]:443'
+	option redirect_https '0'
+	option home '/www'
+	option rfc1918_filter '1'
+	option max_requests '50'
+	option max_connections '100'
+	option cert '/etc/uhttpd.crt'
+	option key '/etc/uhttpd.key'
+	option cgi_prefix '/cgi-bin'
+	list lua_prefix '/cgi-bin/luci=/usr/lib/lua/luci/sgi/uhttpd.lua'
+	option script_timeout '60'
+	option network_timeout '30'
+	option http_keepalive '20'
+	option tcp_keepalive '1'
+	option ubus_prefix '/ubus'
+
+config cert 'defaults'
+	option days '730'
+	option key_type 'ec'
+	option bits '2048'
+	option ec_curve 'P-256'
+	option country 'ZZ'
+	option state 'Somewhere'
+	option location 'Unknown'
+	option commonname 'OpenWrt'
+
+package uplink_switch
+
+config settings 'main'
+	option enabled '0'
+	option usb_interface 'Ueth1'
+	option usb_label 'USB / 4G'
+	option usb_time '00:00'
+	option wan_interface 'wan'
+	option wan_label '5G / WAN'
+	option wan_time '05:00'
+	option manage_wan6 '1'
+
+package upnpd
+
+config upnpd 'config'
+	option enabled '0'
+	option enable_natpmp '1'
+	option enable_upnp '1'
+	option secure_mode '1'
+	option log_output '0'
+	option download '1024'
+	option upload '512'
+	option internal_iface 'lan'
+	option port '5000'
+	option upnp_lease_file '/var/run/miniupnpd.leases'
+	option igdv1 '1'
+
+config perm_rule
+	option action 'allow'
+	option ext_ports '1024-65535'
+	option int_addr '0.0.0.0/0'
+	option int_ports '1024-65535'
+	option comment 'Allow high ports'
+
+config perm_rule
+	option action 'deny'
+	option ext_ports '0-65535'
+	option int_addr '0.0.0.0/0'
+	option int_ports '0-65535'
+	option comment 'Default deny'
+
+package uuplugin
+
+config uuplugin 'uuplugin'
+	option enabled '0'
+
+package watchcat
+
+config watchcat
+	option period '6h'
+	option mode 'ping_reboot'
+	option pinghosts '8.8.8.8'
+	option forcedelay '30'
+
+package wireless
+
+config wifi-device 'radio0'
+	option type 'mac80211'
+	option path '1e140000.pcie/pci0000:00/0000:00:00.0/0000:01:00.0'
+	option channel '1'
+	option band '2g'
+	option htmode 'HT20'
+	option cell_density '0'
+	option disabled '1'
+
+config wifi-iface 'default_radio0'
+	option device 'radio0'
+	option network 'lan'
+	option mode 'ap'
+	option ssid 'Guo1'
+	option encryption 'psk2'
+	option key '13713166984'
+	option disabled '1'
+
+config wifi-device 'radio1'
+	option type 'mac80211'
+	option path '1e140000.pcie/pci0000:00/0000:00:01.0/0000:02:00.0'
+	option channel '36'
+	option band '5g'
+	option htmode 'VHT80'
+	option cell_density '0'
+
+package zerotier
+
+config zerotier 'sample_config'
+	option enabled '0'
+	list join '8056c2e21c000001'
+

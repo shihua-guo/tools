@@ -1,0 +1,111 @@
+#!/bin/bash
+set -euo pipefail
+
+SERVICE="openlist-qos-source.service"
+CONTAINER="openlist"
+INTERFACE="enp3s0"
+QOS_IP="192.168.2.210"
+PREFIX="24"
+TABLE="openlist_qos"
+
+container_ip() {
+  local ip=""
+  local i
+  for i in $(seq 1 60); do
+    ip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$CONTAINER" 2>/dev/null || true)"
+    if [[ -n "$ip" ]]; then
+      printf '%s\n' "$ip"
+      return 0
+    fi
+    sleep 1
+  done
+  echo "OpenList container IP was not available" >&2
+  return 1
+}
+
+apply_rules() {
+  local ip
+  ip="$(container_ip)"
+
+  if ! ip -4 address show dev "$INTERFACE" | grep -Fq "inet $QOS_IP/$PREFIX "; then
+    ip address add "$QOS_IP/$PREFIX" dev "$INTERFACE"
+  fi
+
+  nft delete table ip "$TABLE" 2>/dev/null || true
+  nft -f - <<EOF
+table ip $TABLE {
+  chain postrouting {
+    type nat hook postrouting priority 90; policy accept;
+    ip saddr $ip ip daddr != 192.168.2.0/24 oifname "$INTERFACE" counter snat to $QOS_IP comment "OpenList dedicated QoS identity"
+  }
+}
+EOF
+}
+
+daemon_rules() {
+  local current_ip=""
+  local previous_ip=""
+
+  trap 'remove_rules; exit 0' INT TERM
+  while true; do
+    current_ip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$CONTAINER" 2>/dev/null || true)"
+    if [[ -n "$current_ip" ]] &&
+       { [[ "$current_ip" != "$previous_ip" ]] ||
+         ! ip -4 address show dev "$INTERFACE" | grep -Fq "inet $QOS_IP/$PREFIX " ||
+         ! nft list table ip "$TABLE" >/dev/null 2>&1; }; then
+      apply_rules
+      previous_ip="$current_ip"
+    fi
+    sleep 15
+  done
+}
+
+remove_rules() {
+  nft delete table ip "$TABLE" 2>/dev/null || true
+  ip address del "$QOS_IP/$PREFIX" dev "$INTERFACE" 2>/dev/null || true
+}
+
+show_status() {
+  echo "Service:"
+  systemctl --no-pager --full status "$SERVICE" 2>/dev/null | sed -n '1,8p' || true
+  echo
+  echo "Dedicated address:"
+  ip -4 address show dev "$INTERFACE" | grep -F "$QOS_IP/" || echo "not present"
+  echo
+  echo "SNAT rule:"
+  nft -a list table ip "$TABLE" 2>/dev/null || echo "not active"
+}
+
+case "${1:-status}" in
+  apply)
+    apply_rules
+    ;;
+  daemon)
+    daemon_rules
+    ;;
+  remove)
+    remove_rules
+    ;;
+  enable)
+    systemctl enable "$SERVICE"
+    systemctl restart "$SERVICE"
+    ;;
+  disable)
+    systemctl disable --now "$SERVICE" || true
+    remove_rules
+    ;;
+  status)
+    show_status
+    ;;
+  uninstall)
+    systemctl disable --now "$SERVICE" || true
+    remove_rules
+    rm -f "/etc/systemd/system/$SERVICE"
+    systemctl daemon-reload
+    rm -f "$0"
+    ;;
+  *)
+    echo "Usage: $0 {enable|disable|status|uninstall}" >&2
+    exit 2
+    ;;
+esac

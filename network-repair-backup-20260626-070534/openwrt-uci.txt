@@ -1,0 +1,300 @@
+package network
+
+config interface 'loopback'
+	option device 'lo'
+	option proto 'static'
+	option ipaddr '127.0.0.1'
+	option netmask '255.0.0.0'
+
+config globals 'globals'
+	option ula_prefix 'fdd8:72ef:9a1e::/48'
+	option packet_steering '1'
+
+config device
+	option name 'br-lan'
+	option type 'bridge'
+	list ports 'lan1'
+	list ports 'lan2'
+
+config interface 'lan'
+	option device 'br-lan'
+	option proto 'static'
+	option ipaddr '192.168.2.1'
+	option netmask '255.255.255.0'
+	option ip6assign '64'
+
+config interface 'wan'
+	option device 'wan'
+	option proto 'dhcp'
+	option metric '20'
+	option dns_metric '20'
+
+config interface 'wan6'
+	option device 'wan'
+	option proto 'dhcpv6'
+	option disabled '1'
+
+config interface 'usb'
+	option proto 'dhcp'
+	option device 'usb0'
+
+config interface 'Ueth1'
+	option proto 'dhcp'
+	option device 'eth1'
+	option metric '10'
+	option dns_metric '10'
+
+config interface 'Ueth2'
+	option proto 'dhcp'
+	option device 'eth2'
+
+package dhcp
+
+config dnsmasq
+	option domainneeded '1'
+	option localise_queries '1'
+	option rebind_protection '1'
+	option rebind_localhost '1'
+	option local '/lan/'
+	option domain 'lan'
+	option expandhosts '1'
+	option cachesize '0'
+	option authoritative '1'
+	option readethers '1'
+	option leasefile '/tmp/dhcp.leases'
+	option localservice '1'
+	option ednspacket_max '1232'
+	option localuse '1'
+	option port '53'
+	option noresolv '0'
+	option resolvfile '/tmp/resolv.conf.d/resolv.conf.auto'
+
+config dhcp 'lan'
+	option interface 'lan'
+	option start '100'
+	option limit '100'
+	option leasetime '12h'
+	option dhcpv4 'server'
+	option dhcpv6 'server'
+	option ra 'server'
+	option ra_slaac '1'
+	list ra_flags 'managed-config'
+	list ra_flags 'other-config'
+	option ra_management '1'
+	option ra_default '1'
+
+config dhcp 'wan'
+	option interface 'wan'
+	option ignore '1'
+
+config odhcpd 'odhcpd'
+	option maindhcp '0'
+	option leasefile '/tmp/hosts/odhcpd'
+	option leasetrigger '/usr/sbin/odhcpd-update'
+	option loglevel '4'
+
+config host
+	option name 'DESKTOP-RK5OD0D'
+	option ip '192.168.2.200'
+	list mac '00:CF:E0:2D:BA:89'
+	option duid '0001000130a81a8400cfe02dba89'
+
+config host
+	option name 'DESKTOP-LPOHT43'
+	option ip '192.168.2.177'
+	option mac 'F0:6E:0B:C6:6F:15'
+
+config host
+	option ip '192.168.2.2'
+	option mac 'C4:70:AB:22:3C:2D'
+
+config host
+	option name 'DESKTOP-RK5OD0D'
+	option duid '0001000130A81A8400CFE02DBA89'
+	option mac '00:CF:E0:2D:BA:89'
+
+config host
+	option name 'Xiaomi-13'
+	option ip '192.168.2.211'
+	option mac '56:EE:33:CF:B2:89'
+
+config host
+	option name 'DESKTOP-LPOHT43'
+	option duid '0001000128100C3CF06E0BC66F15'
+	option mac 'F0:6E:0B:C6:6F:15'
+
+config host
+	option name 'Tmall-Genie'
+	option ip '192.168.2.229'
+	option mac '38:D2:CA:67:51:E9'
+
+config host
+	option ip '192.168.2.140'
+	option mac '00:E0:4C:36:35:AB'
+
+config host
+	option duid '000300016A4A8DFE92B2'
+	option mac '6A:4A:8D:FE:92:B2'
+
+config domain
+	option name 'server.home'
+	option ip '192.168.2.200'
+
+package firewall
+
+config defaults
+	option syn_flood '1'
+	option input 'REJECT'
+	option output 'ACCEPT'
+	option forward 'REJECT'
+	option fullcone '1'
+	option brcmfullcone '0'
+	option flow_offloading '1'
+	option flow_offloading_hw '1'
+
+config zone
+	option name 'lan'
+	list network 'lan'
+	option input 'ACCEPT'
+	option output 'ACCEPT'
+	option forward 'ACCEPT'
+
+config zone
+	option name 'wan'
+	option input 'REJECT'
+	option output 'ACCEPT'
+	option forward 'REJECT'
+	option fullcone4 '1'
+	option fullcone6 '0'
+	option masq '1'
+	option mtu_fix '1'
+	list network 'wan'
+	list network 'wan6'
+	list network 'usb'
+	list network 'Ueth1'
+	list network 'Ueth2'
+
+config forwarding
+	option src 'lan'
+	option dest 'wan'
+
+config rule
+	option name 'Allow-DHCP-Renew'
+	option src 'wan'
+	option proto 'udp'
+	option dest_port '68'
+	option target 'ACCEPT'
+	option family 'ipv4'
+
+config rule
+	option name 'Allow-Ping'
+	option src 'wan'
+	option proto 'icmp'
+	option icmp_type 'echo-request'
+	option family 'ipv4'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-IGMP'
+	option src 'wan'
+	option proto 'igmp'
+	option family 'ipv4'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-DHCPv6'
+	option src 'wan'
+	option proto 'udp'
+	option dest_port '546'
+	option family 'ipv6'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-MLD'
+	option src 'wan'
+	option proto 'icmp'
+	option src_ip 'fe80::/10'
+	list icmp_type '130/0'
+	list icmp_type '131/0'
+	list icmp_type '132/0'
+	list icmp_type '143/0'
+	option family 'ipv6'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-ICMPv6-Input'
+	option src 'wan'
+	option proto 'icmp'
+	list icmp_type 'echo-request'
+	list icmp_type 'echo-reply'
+	list icmp_type 'destination-unreachable'
+	list icmp_type 'packet-too-big'
+	list icmp_type 'time-exceeded'
+	list icmp_type 'bad-header'
+	list icmp_type 'unknown-header-type'
+	list icmp_type 'router-solicitation'
+	list icmp_type 'neighbour-solicitation'
+	list icmp_type 'router-advertisement'
+	list icmp_type 'neighbour-advertisement'
+	option limit '1000/sec'
+	option family 'ipv6'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-ICMPv6-Forward'
+	option src 'wan'
+	option dest '*'
+	option proto 'icmp'
+	list icmp_type 'echo-request'
+	list icmp_type 'echo-reply'
+	list icmp_type 'destination-unreachable'
+	list icmp_type 'packet-too-big'
+	list icmp_type 'time-exceeded'
+	list icmp_type 'bad-header'
+	list icmp_type 'unknown-header-type'
+	option limit '1000/sec'
+	option family 'ipv6'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-IPSec-ESP'
+	option src 'wan'
+	option dest 'lan'
+	option proto 'esp'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-ISAKMP'
+	option src 'wan'
+	option dest 'lan'
+	option dest_port '500'
+	option proto 'udp'
+	option target 'ACCEPT'
+
+config include 'passwall'
+	option type 'script'
+	option path '/var/etc/passwall.include'
+	option reload '1'
+
+config include 'passwall_server'
+	option type 'script'
+	option path '/var/etc/passwall_server.include'
+	option reload '1'
+
+config include 'shadowsocksr'
+	option type 'script'
+	option path '/var/etc/shadowsocksr.include'
+	option reload '1'
+
+config include 'cordcloud'
+	option type 'script'
+	option path '/var/etc/cordcloud.include'
+
+package watchcat
+
+config watchcat
+	option period '6h'
+	option mode 'ping_reboot'
+	option pinghosts '8.8.8.8'
+	option forcedelay '30'
+

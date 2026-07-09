@@ -31,55 +31,48 @@
     {% endwith %}
 
     <form class="workspace" action="{{ url_for('generate') }}" method="post" enctype="multipart/form-data">
-      <section class="panel">
-        <h2>图片</h2>
-        <div class="upload-grid">
-          <label class="upload-box">
-            <span>竖屏图片</span>
-            <input type="file" name="vertical_image" accept="image/*">
-          </label>
-          <label class="upload-box">
-            <span>横屏图片</span>
-            <input type="file" name="horizontal_image" accept="image/*">
-          </label>
+      <section class="panel editor-panel">
+        <h2>图片和文字位置</h2>
+        <div class="preview-grid">
+          <article class="preview-card" data-editor="vertical">
+            <label class="upload-box">
+              <span>竖屏图片</span>
+              <input type="file" name="vertical_image" accept="image/*,.heic,.heif,image/heic,image/heif">
+            </label>
+            <div class="preview-stage preview-stage-vertical" data-preview-kind="vertical">
+              <img data-preview-image alt="竖屏预览">
+              <div class="draggable-text" data-text-layer>{{ form.title }}</div>
+            </div>
+            <input type="hidden" name="vertical_text_x" value="{{ form['vertical_text_x'] }}">
+            <input type="hidden" name="vertical_text_y" value="{{ form['vertical_text_y'] }}">
+          </article>
+
+          <article class="preview-card" data-editor="horizontal">
+            <label class="upload-box">
+              <span>横屏图片</span>
+              <input type="file" name="horizontal_image" accept="image/*,.heic,.heif,image/heic,image/heif">
+            </label>
+            <div class="preview-stage preview-stage-horizontal" data-preview-kind="horizontal">
+              <img data-preview-image alt="横屏预览">
+              <div class="draggable-text" data-text-layer>{{ form.title }}</div>
+            </div>
+            <input type="hidden" name="horizontal_text_x" value="{{ form['horizontal_text_x'] }}">
+            <input type="hidden" name="horizontal_text_y" value="{{ form['horizontal_text_y'] }}">
+          </article>
         </div>
       </section>
 
-      <section class="panel">
+      <section class="panel text-panel">
         <h2>文字</h2>
         <label>
-          主标题
-          <textarea name="title" rows="2" required>{{ form.title }}</textarea>
-        </label>
-        <label>
-          副标题
-          <input type="text" name="subtitle" value="{{ form.subtitle }}">
-        </label>
-        <label>
-          角标
-          <input type="text" name="badge" value="{{ form.badge }}">
+          封面文字
+          <textarea name="title" rows="6" required>{{ form.title }}</textarea>
         </label>
       </section>
 
       <section class="panel controls">
         <h2>样式</h2>
         <div class="control-grid">
-          <label>
-            文字位置
-            <select name="position">
-              <option value="top" {% if form.position == 'top' %}selected{% endif %}>上方</option>
-              <option value="center" {% if form.position == 'center' %}selected{% endif %}>中间</option>
-              <option value="bottom" {% if form.position == 'bottom' %}selected{% endif %}>下方</option>
-            </select>
-          </label>
-          <label>
-            对齐
-            <select name="align">
-              <option value="left" {% if form.align == 'left' %}selected{% endif %}>左对齐</option>
-              <option value="center" {% if form.align == 'center' %}selected{% endif %}>居中</option>
-              <option value="right" {% if form.align == 'right' %}selected{% endif %}>右对齐</option>
-            </select>
-          </label>
           <label>
             可读性
             <select name="style">
@@ -96,7 +89,7 @@
             </select>
           </label>
           <label>
-            标题大小
+            文字大小
             <input type="number" name="title_size_percent" min="4" max="14" step="0.5" value="{{ form.title_size_percent }}">
           </label>
           <label>
@@ -104,12 +97,8 @@
             <input type="color" name="text_color" value="{{ form.text_color }}">
           </label>
           <label>
-            角标颜色
-            <input type="color" name="accent_color" value="{{ form.accent_color }}">
-          </label>
-          <label>
             自定义字体
-            <input type="file" name="font_file" accept=".ttf,.ttc,.otf">
+            <input type="file" name="font_file" accept=".ttf,.ttc,.otf,font/ttf,font/otf">
           </label>
         </div>
         <button class="primary" type="submit">生成封面</button>
@@ -119,7 +108,7 @@
     {% if results %}
       <section class="results">
         <div class="results-head">
-          <h2>生成结果</h2>
+          <h2>本次生成</h2>
           {% if zip_name %}
             <a class="download-all" href="{{ url_for('download_file', filename=zip_name) }}">下载全部 ZIP</a>
           {% endif %}
@@ -135,6 +124,44 @@
         </div>
       </section>
     {% endif %}
+
+    {% if history %}
+      <section class="history">
+        <div class="results-head">
+          <h2>历史记录</h2>
+        </div>
+        <div class="history-list">
+          {% for entry in history %}
+            <article class="history-item">
+              <div class="history-meta">
+                <div>
+                  <p class="history-time">{{ entry['created_at'] }}</p>
+                  <h3>{{ entry['title'] }}</h3>
+                  {% if entry['subtitle'] %}
+                    <p class="history-subtitle">{{ entry['subtitle'] }}</p>
+                  {% endif %}
+                </div>
+                {% if entry['zip_url'] %}
+                  <a class="download-all" href="{{ entry['zip_url'] }}">下载 ZIP</a>
+                {% endif %}
+              </div>
+              <div class="history-grid">
+                {% for item in entry['items'] %}
+                  <div class="history-card">
+                    <img src="{{ item['url'] }}" alt="{{ item['label'] }}">
+                    <div>
+                      <span>{{ item['label'] }}</span>
+                      <a href="{{ item['download_url'] }}">下载</a>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
   </main>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>

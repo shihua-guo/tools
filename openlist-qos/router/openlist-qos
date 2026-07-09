@@ -1,0 +1,239 @@
+#!/bin/sh
+
+CONFIG="openlist-qos"
+TABLE="openlist_qos"
+RATE_FILE="/var/run/openlist-qos.rate"
+PID_FILE="/var/run/openlist-qos.pid"
+
+load_config() {
+	ENABLED="$(uci -q get "$CONFIG.main.enabled" || echo 0)"
+	INTERFACE="$(uci -q get "$CONFIG.main.interface" || echo br-lan)"
+	BULK_IP="$(uci -q get "$CONFIG.main.bulk_ip" || echo 192.168.2.210)"
+	CAPACITY_KBIT="$(uci -q get "$CONFIG.main.capacity_kbit" || echo 10500)"
+	MINIMUM_KBIT="$(uci -q get "$CONFIG.main.minimum_kbit" || echo 512)"
+	TRIGGER_KBIT="$(uci -q get "$CONFIG.main.trigger_kbit" || echo 2000)"
+	RELEASE_KBIT="$(uci -q get "$CONFIG.main.release_kbit" || echo 1200)"
+	TRIGGER_SECONDS="$(uci -q get "$CONFIG.main.trigger_seconds" || echo 4)"
+	RESERVE_KBIT="$(uci -q get "$CONFIG.main.reserve_kbit" || echo 1000)"
+	RELEASE_SECONDS="$(uci -q get "$CONFIG.main.release_seconds" || echo 6)"
+	POLL_SECONDS="$(uci -q get "$CONFIG.main.poll_seconds" || echo 2)"
+	BURST_KBYTES="$(uci -q get "$CONFIG.main.burst_kbytes" || echo 32)"
+}
+
+apply_rules() {
+	load_config
+	[ "$ENABLED" = "1" ] || return 0
+
+	nft delete table inet "$TABLE" 2>/dev/null || true
+	nft -f - <<EOF
+table inet $TABLE {
+	counter openlist_download {
+	}
+
+	counter openlist_delivered {
+	}
+
+	counter other_download {
+	}
+
+	chain account_download {
+		type filter hook postrouting priority mangle; policy accept;
+		oifname "$INTERFACE" ip daddr $BULK_IP counter name openlist_download return
+		oifname "$INTERFACE" counter name other_download
+	}
+
+	chain limit_download {
+		type filter hook postrouting priority filter + 10; policy accept;
+	}
+}
+EOF
+}
+
+remove_rules() {
+	nft delete table inet "$TABLE" 2>/dev/null || true
+	rm -f "$RATE_FILE" "$PID_FILE"
+}
+
+counter_bytes() {
+	nft list counter inet "$TABLE" "$1" 2>/dev/null |
+		awk '/packets/ { for (i = 1; i <= NF; i++) if ($i == "bytes") { print $(i + 1); exit } }'
+}
+
+set_limit() {
+	local rate_kbit="$1"
+	local rate_kbytes
+
+	if [ "$rate_kbit" -le 0 ]; then
+		nft -f - <<EOF
+flush chain inet $TABLE limit_download
+add rule inet $TABLE limit_download oifname "$INTERFACE" ip daddr $BULK_IP counter name openlist_delivered
+EOF
+		echo unlimited > "$RATE_FILE"
+		return
+	fi
+
+	rate_kbytes=$((rate_kbit / 8))
+	[ "$rate_kbytes" -lt 1 ] && rate_kbytes=1
+	nft -f - <<EOF
+flush chain inet $TABLE limit_download
+add rule inet $TABLE limit_download oifname "$INTERFACE" ip daddr $BULK_IP limit rate over $rate_kbytes kbytes/second burst $BURST_KBYTES kbytes counter drop comment "OpenList adaptive low priority"
+add rule inet $TABLE limit_download oifname "$INTERFACE" ip daddr $BULK_IP counter name openlist_delivered
+EOF
+	echo "$rate_kbit" > "$RATE_FILE"
+}
+
+daemon() {
+	local previous_other current_other delta_other other_kbit
+	local current_limit desired_limit trigger_count release_count other_ewma
+	local update_age difference
+
+	load_config
+	[ "$ENABLED" = "1" ] || exit 0
+	apply_rules
+	echo $$ > "$PID_FILE"
+	trap 'remove_rules; exit 0' INT TERM
+
+	previous_other="$(counter_bytes other_download)"
+	[ -n "$previous_other" ] || previous_other=0
+	current_limit=0
+	trigger_count=0
+	release_count=0
+	other_ewma=0
+	update_age=99
+	set_limit 0
+
+	while sleep "$POLL_SECONDS"; do
+		update_age=$((update_age + POLL_SECONDS))
+		current_other="$(counter_bytes other_download)"
+		[ -n "$current_other" ] || current_other="$previous_other"
+		delta_other=$((current_other - previous_other))
+		[ "$delta_other" -lt 0 ] && delta_other=0
+		previous_other="$current_other"
+		other_kbit=$((delta_other * 8 / 1000 / POLL_SECONDS))
+
+		if [ "$current_limit" -eq 0 ]; then
+			if [ "$other_kbit" -ge "$TRIGGER_KBIT" ]; then
+				trigger_count=$((trigger_count + POLL_SECONDS))
+			else
+				trigger_count=0
+			fi
+
+			if [ "$trigger_count" -lt "$TRIGGER_SECONDS" ]; then
+				continue
+			fi
+
+			trigger_count=0
+			release_count=0
+			other_ewma="$other_kbit"
+			desired_limit=$((CAPACITY_KBIT - other_ewma - RESERVE_KBIT))
+			[ "$desired_limit" -gt $((CAPACITY_KBIT - RESERVE_KBIT)) ] &&
+				desired_limit=$((CAPACITY_KBIT - RESERVE_KBIT))
+			[ "$desired_limit" -lt "$MINIMUM_KBIT" ] &&
+				desired_limit="$MINIMUM_KBIT"
+			current_limit="$desired_limit"
+			set_limit "$current_limit"
+			update_age=0
+			continue
+		fi
+
+		if [ "$other_kbit" -le "$RELEASE_KBIT" ]; then
+			release_count=$((release_count + POLL_SECONDS))
+		else
+			release_count=0
+		fi
+
+		if [ "$release_count" -ge "$RELEASE_SECONDS" ]; then
+			current_limit=0
+			trigger_count=0
+			release_count=0
+			other_ewma=0
+			set_limit 0
+			update_age=0
+			continue
+		fi
+
+		if [ "$other_kbit" -ge "$RELEASE_KBIT" ]; then
+			if [ "$other_ewma" -eq 0 ]; then
+				other_ewma="$other_kbit"
+			else
+				other_ewma=$(((other_ewma * 3 + other_kbit) / 4))
+			fi
+
+			desired_limit=$((CAPACITY_KBIT - other_ewma - RESERVE_KBIT))
+			[ "$desired_limit" -gt $((CAPACITY_KBIT - RESERVE_KBIT)) ] &&
+				desired_limit=$((CAPACITY_KBIT - RESERVE_KBIT))
+			[ "$desired_limit" -lt "$MINIMUM_KBIT" ] &&
+				desired_limit="$MINIMUM_KBIT"
+
+			if [ "$update_age" -ge 4 ]; then
+				difference=$((desired_limit - current_limit))
+				[ "$difference" -lt 0 ] && difference=$((-difference))
+				if [ "$difference" -ge 500 ]; then
+					current_limit="$desired_limit"
+					set_limit "$current_limit"
+					update_age=0
+				fi
+			fi
+		else
+			other_ewma=$((other_ewma * 3 / 4))
+		fi
+	done
+}
+
+show_status() {
+	load_config
+	echo "enabled=$ENABLED"
+	echo "interface=$INTERFACE"
+	echo "bulk_ip=$BULK_IP"
+	echo "capacity_kbit=$CAPACITY_KBIT"
+	echo "minimum_kbit=$MINIMUM_KBIT"
+	echo "trigger_kbit=$TRIGGER_KBIT"
+	echo "release_kbit=$RELEASE_KBIT"
+	echo "trigger_seconds=$TRIGGER_SECONDS"
+	echo "release_seconds=$RELEASE_SECONDS"
+	echo "current_limit_kbit=$(cat "$RATE_FILE" 2>/dev/null || echo inactive)"
+	echo "daemon_pid=$(cat "$PID_FILE" 2>/dev/null || echo inactive)"
+	echo
+	echo "Traffic counters and active limiter:"
+	nft -a list table inet "$TABLE" 2>/dev/null || echo "not active"
+}
+
+case "${1:-status}" in
+	apply)
+		apply_rules
+		;;
+	daemon)
+		daemon
+		;;
+	remove)
+		remove_rules
+		;;
+	enable)
+		uci set "$CONFIG.main.enabled=1"
+		uci commit "$CONFIG"
+		/etc/init.d/openlist-qos enable
+		/etc/init.d/openlist-qos restart
+		;;
+	disable)
+		uci set "$CONFIG.main.enabled=0"
+		uci commit "$CONFIG"
+		/etc/init.d/openlist-qos disable 2>/dev/null || true
+		/etc/init.d/openlist-qos stop 2>/dev/null || true
+		;;
+	status)
+		show_status
+		;;
+	uninstall)
+		/etc/init.d/openlist-qos disable 2>/dev/null || true
+		/etc/init.d/openlist-qos stop 2>/dev/null || true
+		remove_rules
+		rm -f /etc/init.d/openlist-qos
+		rm -f /etc/hotplug.d/iface/99-openlist-qos
+		rm -f /etc/config/openlist-qos
+		rm -f "$0"
+		;;
+	*)
+		echo "Usage: $0 {enable|disable|status|uninstall}" >&2
+		exit 2
+		;;
+esac

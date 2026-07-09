@@ -1,0 +1,31 @@
+Fri Jun 26 08:00:34 CST 2026
+dhcp.lan=dhcp
+dhcp.lan.interface='lan'
+dhcp.lan.start='100'
+dhcp.lan.limit='100'
+dhcp.lan.leasetime='12h'
+dhcp.lan.dhcpv4='server'
+dhcp.lan.dhcpv6='server'
+dhcp.lan.ra='server'
+dhcp.lan.ra_slaac='1'
+dhcp.lan.ra_flags='managed-config' 'other-config'
+dhcp.lan.ra_management='1'
+dhcp.lan.ra_default='1'
+dhcp.lan.force='1'
+dhcp.lan.ignore='0'
+PORTS
+udp        0      0 127.0.0.1:53            0.0.0.0:*                           1564/dnsmasq
+udp        0      0 192.168.0.2:53          0.0.0.0:*                           1564/dnsmasq
+udp        0      0 192.168.2.1:53          0.0.0.0:*                           1564/dnsmasq
+udp        0      0 0.0.0.0:67              0.0.0.0:*                           1564/dnsmasq
+udp        0      0 ::1:53                  :::*                                1564/dnsmasq
+udp        0      0 fe80::36ce:ff:fe6c:f81e:53 :::*                                1564/dnsmasq
+udp        0      0 fe80::364b:50ff:fe00:0:53 :::*                                1564/dnsmasq
+udp        0      0 fdd8:72ef:9a1e::1:53    :::*                                1564/dnsmasq
+udp        0      0 fe80::36ce:ff:fe6c:f81e:53 :::*                                1564/dnsmasq
+LEASES
+1782475165 7a:6f:d9:1c:96:a2 192.168.2.104 iPhone 01:7a:6f:d9:1c:96:a2
+1782475174 00:5c:c2:9b:b5:60 192.168.2.120 IPC 01:00:5c:c2:9b:b5:60
+1782475152 38:d2:ca:67:51:e9 192.168.2.229 Tmall-Genie 01:38:d2:ca:67:51:e9
+QOS
+running

@@ -1,8 +1,9 @@
 using System.Windows;
+using WpfApplication = System.Windows.Application;
 
 namespace Simple_Windows_Reminder;
 
-public partial class App : Application
+public partial class App : WpfApplication
 {
     private ReminderStore? _store;
     private MainWindow? _mainWindow;

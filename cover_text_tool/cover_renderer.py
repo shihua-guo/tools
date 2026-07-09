@@ -2,13 +2,25 @@ from __future__ import annotations
 
 import math
 import re
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
+try:
+    from pillow_heif import register_heif_opener
+except ImportError:
+    HEIF_AVAILABLE = False
+else:
+    register_heif_opener()
+    HEIF_AVAILABLE = True
 
 SUPPORTED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
+if HEIF_AVAILABLE:
+    SUPPORTED_IMAGE_EXTENSIONS.update({".heic", ".heif"})
+MAX_OUTPUT_BYTES = 2_000_000
+MIN_OUTPUT_EDGE = 64
 
 
 @dataclass(frozen=True)
@@ -22,6 +34,8 @@ class CoverOptions:
     text_color: str = "#FFFFFF"
     accent_color: str = "#FFD166"
     title_size_percent: float = 8.0
+    text_x_percent: float | None = None
+    text_y_percent: float | None = None
     output_format: str = "png"
     font_path: str | None = None
 
@@ -55,7 +69,8 @@ def render_cover(input_path: Path, output_path: Path, options: CoverOptions) -> 
     )
 
     if options.style == "gradient":
-        image = _apply_readability_gradient(image, layout["band"], options.position)
+        gradient_position = "center" if layout["is_custom_position"] else options.position
+        image = _apply_readability_gradient(image, layout["band"], gradient_position)
         draw = ImageDraw.Draw(image)
     elif options.style == "panel":
         _draw_panel(draw, layout["panel_box"], width)
@@ -73,10 +88,64 @@ def render_cover(input_path: Path, output_path: Path, options: CoverOptions) -> 
     )
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    if options.output_format == "jpg":
-        image.convert("RGB").save(output_path, quality=94, optimize=True)
+    _save_under_size_limit(image, output_path, options.output_format)
+
+
+def _save_under_size_limit(image: Image.Image, output_path: Path, output_format: str) -> None:
+    if output_format == "jpg":
+        _save_jpg_under_size_limit(image, output_path)
     else:
-        image.save(output_path, optimize=True)
+        _save_png_under_size_limit(image, output_path)
+
+
+def _save_jpg_under_size_limit(image: Image.Image, output_path: Path) -> None:
+    rgb_image = image.convert("RGB")
+    for quality in (94, 90, 86, 82, 78, 74, 70, 66, 62, 58, 54, 50, 46, 42, 38, 34):
+        _save_atomic(rgb_image, output_path, "JPEG", quality=quality, optimize=True, progressive=True)
+        if output_path.stat().st_size <= MAX_OUTPUT_BYTES:
+            return
+
+    _resize_until_under_limit(
+        rgb_image,
+        output_path,
+        "JPEG",
+        quality=72,
+        optimize=True,
+        progressive=True,
+    )
+
+
+def _save_png_under_size_limit(image: Image.Image, output_path: Path) -> None:
+    _save_atomic(image, output_path, "PNG", optimize=True)
+    if output_path.stat().st_size <= MAX_OUTPUT_BYTES:
+        return
+
+    for colors in (256, 192, 128, 96, 64):
+        quantized = image.convert("RGBA").quantize(colors=colors, method=Image.Quantize.FASTOCTREE)
+        _save_atomic(quantized, output_path, "PNG", optimize=True)
+        if output_path.stat().st_size <= MAX_OUTPUT_BYTES:
+            return
+
+    best_png = image.convert("RGBA").quantize(colors=128, method=Image.Quantize.FASTOCTREE)
+    _resize_until_under_limit(best_png, output_path, "PNG", optimize=True)
+
+
+def _resize_until_under_limit(image: Image.Image, output_path: Path, image_format: str, **save_options: object) -> None:
+    resized = image
+    while output_path.stat().st_size > MAX_OUTPUT_BYTES and min(resized.size) > MIN_OUTPUT_EDGE:
+        next_size = (max(1, int(resized.width * 0.9)), max(1, int(resized.height * 0.9)))
+        resized = resized.resize(next_size, Image.Resampling.LANCZOS)
+        _save_atomic(resized, output_path, image_format, **save_options)
+
+
+def _save_atomic(image: Image.Image, output_path: Path, image_format: str, **save_options: object) -> None:
+    with tempfile.NamedTemporaryFile(dir=output_path.parent, suffix=output_path.suffix, delete=False) as temp_file:
+        temp_path = Path(temp_file.name)
+    try:
+        image.save(temp_path, format=image_format, **save_options)
+        temp_path.replace(output_path)
+    finally:
+        temp_path.unlink(missing_ok=True)
 
 
 def default_font_path() -> str | None:
@@ -203,6 +272,7 @@ def _measure_layout(
     badge_font: ImageFont.FreeTypeFont | ImageFont.ImageFont,
     options: CoverOptions,
 ) -> dict[str, object]:
+    is_custom_position = options.text_x_percent is not None and options.text_y_percent is not None
     title_stroke = _stroke_for(title_font)
     subtitle_stroke = _stroke_for(subtitle_font)
     max_text_width = int(width * 0.84)
@@ -229,7 +299,10 @@ def _measure_layout(
     if title_lines and subtitle_lines:
         block_height += subtitle_gap
 
-    if options.position == "top":
+    if is_custom_position:
+        x = int(width * float(options.text_x_percent) / 100)
+        y = int(height * float(options.text_y_percent) / 100)
+    elif options.position == "top":
         y = margin_y
     elif options.position == "center":
         y = int((height - block_height) / 2)
@@ -242,12 +315,16 @@ def _measure_layout(
         + [badge_width, 1]
     )
 
-    if options.align == "center":
-        x = int((width - max_text_width) / 2)
-    elif options.align == "right":
-        x = width - margin_x - max_text_width
-    else:
-        x = margin_x
+    if not is_custom_position:
+        if options.align == "center":
+            x = int((width - max_text_width) / 2)
+        elif options.align == "right":
+            x = width - margin_x - max_text_width
+        else:
+            x = margin_x
+
+    x = _clamp(x, 0, max(0, width - max_line_width))
+    y = _clamp(y, 0, max(0, height - block_height))
 
     padding_x = max(18, int(width * 0.035))
     padding_y = max(14, int(height * 0.025))
@@ -258,7 +335,9 @@ def _measure_layout(
         min(height, y + block_height + padding_y),
     )
 
-    if options.position == "top":
+    if is_custom_position:
+        band = (0, max(0, panel_box[1] - int(height * 0.08)), width, min(height, panel_box[3] + int(height * 0.08)))
+    elif options.position == "top":
         band = (0, 0, width, min(height, panel_box[3] + int(height * 0.12)))
     elif options.position == "center":
         band = (0, max(0, panel_box[1] - int(height * 0.08)), width, min(height, panel_box[3] + int(height * 0.08)))
@@ -278,6 +357,7 @@ def _measure_layout(
         "badge_width": badge_width,
         "panel_box": panel_box,
         "band": band,
+        "is_custom_position": is_custom_position,
     }
 
 

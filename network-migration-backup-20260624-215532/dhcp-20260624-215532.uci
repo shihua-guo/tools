@@ -1,0 +1,92 @@
+package dhcp
+
+config dnsmasq
+	option domainneeded '1'
+	option localise_queries '1'
+	option rebind_protection '1'
+	option rebind_localhost '1'
+	option local '/lan/'
+	option domain 'lan'
+	option expandhosts '1'
+	option cachesize '0'
+	option authoritative '1'
+	option readethers '1'
+	option leasefile '/tmp/dhcp.leases'
+	option localservice '1'
+	option ednspacket_max '1232'
+	option localuse '1'
+	option port '53'
+	option noresolv '0'
+	option resolvfile '/tmp/resolv.conf.d/resolv.conf.auto'
+
+config dhcp 'lan'
+	option interface 'lan'
+	option start '100'
+	option limit '150'
+	option leasetime '12h'
+	option dhcpv4 'server'
+	option dhcpv6 'server'
+	option ra 'server'
+	option ra_slaac '1'
+	list ra_flags 'managed-config'
+	list ra_flags 'other-config'
+	option ra_management '1'
+	option ra_default '1'
+
+config dhcp 'wan'
+	option interface 'wan'
+	option ignore '1'
+
+config odhcpd 'odhcpd'
+	option maindhcp '0'
+	option leasefile '/tmp/hosts/odhcpd'
+	option leasetrigger '/usr/sbin/odhcpd-update'
+	option loglevel '4'
+
+config host
+	option name 'DESKTOP-RK5OD0D'
+	option ip '192.168.5.205'
+	list mac '00:CF:E0:2D:BA:89'
+	option duid '0001000130a81a8400cfe02dba89'
+
+config host
+	option name 'DESKTOP-LPOHT43'
+	option ip '192.168.5.177'
+	option mac 'F0:6E:0B:C6:6F:15'
+
+config host
+	option ip '192.168.5.186'
+	option mac 'C4:70:AB:22:3C:2D'
+
+config host
+	option name 'DESKTOP-RK5OD0D'
+	option duid '0001000130A81A8400CFE02DBA89'
+	option mac '00:CF:E0:2D:BA:89'
+
+config host
+	option name 'Xiaomi-13'
+	option ip '192.168.5.211'
+	option mac '56:EE:33:CF:B2:89'
+
+config host
+	option name 'DESKTOP-LPOHT43'
+	option duid '0001000128100C3CF06E0BC66F15'
+	option mac 'F0:6E:0B:C6:6F:15'
+
+config host
+	option name 'Tmall-Genie'
+	option ip '192.168.5.229'
+	option mac '38:D2:CA:67:51:E9'
+
+config host
+	option ip '192.168.5.140'
+	option mac '00:E0:4C:36:35:AB'
+
+config host
+	option duid '000300016A4A8DFE92B2'
+	option mac '6A:4A:8D:FE:92:B2'
+
+config domain
+	option name 'server.home'
+	option ip '192.168.2.101'
+
