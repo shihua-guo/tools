@@ -28,6 +28,11 @@ def app_dir() -> Path:
 
 def cli_command(config_path: Path) -> list[str]:
     base_dir = app_dir()
+    # In source/venv deployment, always launch the adjacent .py with the same
+    # interpreter. A stale dist directory must not silently switch this back
+    # to a PyInstaller executable.
+    if not getattr(sys, "frozen", False):
+        return [sys.executable, str(base_dir / "mp4_asr_offline.py"), "--config", str(config_path)]
     candidates = [
         base_dir / "mp4_asr_offline.exe",
         base_dir / "mp4_asr_offline" / "mp4_asr_offline.exe",
@@ -35,7 +40,7 @@ def cli_command(config_path: Path) -> list[str]:
     for exe in candidates:
         if exe.exists():
             return [str(exe), "--config", str(config_path)]
-    return [sys.executable, str(base_dir / "mp4_asr_offline.py"), "--config", str(config_path)]
+    raise RuntimeError("未找到 mp4_asr_offline.exe")
 
 
 def read_text_if_exists(path: Path) -> str:

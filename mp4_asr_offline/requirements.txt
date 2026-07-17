@@ -1,0 +1,6 @@
+# Install these into this tool's own virtual environment.  Do not reuse
+# CapsWriter-Offline\internal: it is a private, frozen Python runtime.
+numpy==2.4.3
+onnxruntime==1.24.4
+pydub==0.25.1
+gguf==0.18.0

@@ -11,6 +11,7 @@ import subprocess
 import sys
 import time
 import traceback
+import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -156,6 +157,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--vulkan", action="store_true", help="启用 Vulkan")
     parser.add_argument("--chunk-size", type=float, help="ASR 分段秒数")
     parser.add_argument("--dry-run", action="store_true", help="只扫描和校验配置，不转换")
+    parser.add_argument("--check-runtime", action="store_true", help="只检查 Python/CapsWriter 运行时兼容性，不加载模型")
     return parser.parse_args()
 
 
@@ -350,18 +352,38 @@ def prepare_mp3(cfg: AppConfig, video: Path, mp3_path: Path) -> None:
 
 
 def setup_capswriter_runtime(cfg: AppConfig) -> None:
+    """Expose CapsWriter's Python source without borrowing its frozen runtime.
+
+    ``CapsWriter-Offline/internal`` is the private Python runtime bundled with
+    CapsWriter.  It contains CPython extension modules such as
+    ``unicodedata.pyd`` and its own ``python313.dll``.  Adding that directory
+    to ``sys.path`` makes Python load those extensions into *this* process.
+    That works only when both applications were built from exactly compatible
+    Python builds, and otherwise raises e.g. ``Module use of python313.dll
+    conflicts with this version of Python``.
+
+    We need only CapsWriter's ``util`` source tree.  Third-party packages must
+    come from the interpreter/venv that starts this program, so deliberately
+    never add ``internal`` to ``sys.path`` or PATH.
+    """
+    assert cfg.capswriter_dir is not None
     capswriter = str(cfg.capswriter_dir)
-    internal = str(cfg.capswriter_dir / "internal")
-    os.environ["PATH"] = str(app_dir()) + os.pathsep + internal + os.pathsep + os.environ.get("PATH", "")
-    for item in (capswriter, internal):
-        if item not in sys.path:
-            sys.path.insert(0, item)
-    for module_name in ("numpy",):
-        module = sys.modules.get(module_name)
-        if module is not None and not hasattr(module, "float32"):
-            del sys.modules[module_name]
+    internal = (cfg.capswriter_dir / "internal").resolve()
+
+    # Remove a stale entry too: this makes repeated calls and custom launchers
+    # safe, rather than merely avoiding insertion in the normal path.
+    sys.path[:] = [
+        item
+        for item in sys.path
+        if not item or Path(item).resolve() != internal
+    ]
+    if capswriter not in sys.path:
+        sys.path.insert(0, capswriter)
+
+    # Keep the application directory available to child processes, but do not
+    # prepend CapsWriter/internal: it is a different embedded Python runtime.
+    os.environ["PATH"] = str(app_dir()) + os.pathsep + os.environ.get("PATH", "")
     if hasattr(os, "add_dll_directory"):
-        DLL_HANDLES.append(os.add_dll_directory(internal))
         llama_bin = cfg.capswriter_dir / "util" / "llama" / "bin"
         if llama_bin.exists():
             DLL_HANDLES.append(os.add_dll_directory(str(llama_bin)))
@@ -392,6 +414,22 @@ def create_qwen_engine(cfg: AppConfig):
         pad_to=int(cfg.chunk_size),
         enable_aligner=True,
     )
+
+
+def check_runtime(cfg: AppConfig) -> None:
+    """Fail early if the selected Python environment cannot use CapsWriter."""
+    setup_capswriter_runtime(cfg)
+    import numpy
+    import onnxruntime
+    from util.qwen_asr_gguf.inference import aligner
+
+    print("运行时检查通过")
+    print(f"Python: {sys.executable}")
+    print(f"Python version: {sys.version.splitlines()[0]}")
+    print(f"unicodedata: {getattr(unicodedata, '__file__', '<built-in>')}")
+    print(f"numpy: {numpy.__file__}")
+    print(f"onnxruntime: {onnxruntime.__file__}")
+    print(f"CapsWriter aligner: {aligner.__file__}")
 
 
 def group_items_to_subtitles(items: list[Any], max_chars: int = 35, max_gap: float = 0.5, min_duration: float = 0.8) -> list[dict[str, Any]]:
@@ -545,6 +583,9 @@ def main() -> int:
         cfg = merge_cli(config_from_dict(data), args)
         cfg = resolve_config(cfg)
         validate_config(cfg)
+        if args.check_runtime:
+            check_runtime(cfg)
+            return 0
         files = scan_media(cfg.inputs, cfg.recursive)
         print(f"扫描到媒体文件: {len(files)}")
         print(f"输出目录: {cfg.output_dir}")
