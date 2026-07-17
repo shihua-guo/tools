@@ -75,6 +75,7 @@ Qwen3-ASR 模型目录需要包含 ASR 文件和 aligner 文件，否则无法�
 - `ffmpeg.exe`、`ffprobe.exe`（或已加入系统 PATH）
 
 `.venv` 是内网安装后自动生成的目录，不建议从外网机器直接复制。
+`ffmpeg.exe` 和 `ffprobe.exe` 不提交到 Git：当前构建中的单个文件约 223 MB，超过 GitHub 单文件限制。请从外网机器现有的 `dist\mp4_asr_offline\` 目录复制这两个文件到内网项目根目录，或由内网管理员提供并加入 PATH。
 
 ## WebUI
 
