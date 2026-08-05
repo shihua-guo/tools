@@ -17,5 +17,5 @@ overwrite: false
 language: Chinese
 use_dml: false
 vulkan: false
-chunk_size: 30
+chunk_size: 20
 mp3_bitrate: 192k

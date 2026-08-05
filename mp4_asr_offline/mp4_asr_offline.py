@@ -24,7 +24,7 @@ ALIGNER_FRONTEND = "qwen3_aligner_encoder_frontend.int4.onnx"
 ALIGNER_BACKEND = "qwen3_aligner_encoder_backend.int4.onnx"
 ALIGNER_LLM = "qwen3_aligner_llm.q4_k.gguf"
 DLL_HANDLES: list[Any] = []
-DEFAULT_CHUNK_SIZE = 30.0
+DEFAULT_CHUNK_SIZE = 20.0
 MAX_CHUNK_SIZE = 40.0
 
 
@@ -203,7 +203,7 @@ def resolve_config(cfg: AppConfig) -> AppConfig:
     if cfg.chunk_size > MAX_CHUNK_SIZE:
         raise ConfigError(
             f"chunk_size 不能超过 {MAX_CHUNK_SIZE:g} 秒。Qwen3-ASR 的 llama.cpp 后端在更长分段下容易触发 "
-            "GGML_ASSERT(n_tokens_all <= cparams.n_batch)，请改为 30 或 40。"
+            "GGML_ASSERT(n_tokens_all <= cparams.n_batch)，建议改为 20。"
         )
     if cfg.language.lower() != "chinese":
         raise ConfigError("当前工具仅支持中文普通话识别，请将 language 设置为 Chinese")
@@ -399,6 +399,15 @@ def create_qwen_engine(cfg: AppConfig):
     module = sys.modules.get("numpy")
     if module is not None and not hasattr(module, "float32"):
         del sys.modules["numpy"]
+    from util.qwen_asr_gguf.inference import aligner
+
+    from capswriter_compat import ALIGNER_TOKEN_LIMIT, install_aligner_compatibility
+
+    corrected_bad_guard = install_aligner_compatibility(aligner)
+    if corrected_bad_guard:
+        print("已修正 CapsWriter Aligner 的四倍 token guard")
+    print(f"CapsWriter Aligner token 上限: {ALIGNER_TOKEN_LIMIT}")
+
     from util.qwen_asr_gguf import create_asr_engine
 
     return create_asr_engine(
@@ -423,6 +432,10 @@ def check_runtime(cfg: AppConfig) -> None:
     import onnxruntime
     from util.qwen_asr_gguf.inference import aligner
 
+    from capswriter_compat import ALIGNER_TOKEN_LIMIT, install_aligner_compatibility
+
+    corrected_bad_guard = install_aligner_compatibility(aligner)
+
     print("运行时检查通过")
     print(f"Python: {sys.executable}")
     print(f"Python version: {sys.version.splitlines()[0]}")
@@ -430,6 +443,9 @@ def check_runtime(cfg: AppConfig) -> None:
     print(f"numpy: {numpy.__file__}")
     print(f"onnxruntime: {onnxruntime.__file__}")
     print(f"CapsWriter aligner: {aligner.__file__}")
+    print(f"CapsWriter aligner token limit: {ALIGNER_TOKEN_LIMIT}")
+    if corrected_bad_guard:
+        print("CapsWriter aligner guard: 已修正 n_total * 4 误判")
 
 
 def group_items_to_subtitles(items: list[Any], max_chars: int = 35, max_gap: float = 0.5, min_duration: float = 0.8) -> list[dict[str, Any]]:

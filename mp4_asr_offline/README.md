@@ -4,7 +4,7 @@
 
 当前版本仅用于中文普通话识别，配置中的 `language` 请保持 `Chinese`。
 
-`chunk_size` 建议保持 `30`。Qwen3-ASR 的 llama.cpp 后端不适合过长分段，本工具会拒绝超过 `40` 秒的配置，避免触发 `GGML_ASSERT(n_tokens_all <= cparams.n_batch)`。
+`chunk_size` 建议保持 `20`。Qwen3-ASR 的 llama.cpp 后端不适合过长分段，本工具会拒绝超过 `40` 秒的配置。程序会把 Aligner 的 `n_ctx`/`n_batch` 统一设为 `4096`，并按真实的 `batch.n_tokens` 做 decode 前保护；Qwen MRoPE 的四路 position 数据不会被误算为四倍 token。
 
 ## 推荐部署方式：源码 + 独立虚拟环境
 
