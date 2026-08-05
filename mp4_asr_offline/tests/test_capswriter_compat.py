@@ -11,7 +11,7 @@ PROJECT_DIR = Path(__file__).resolve().parents[1]
 if str(PROJECT_DIR) not in sys.path:
     sys.path.insert(0, str(PROJECT_DIR))
 
-from capswriter_compat import correct_aligner_guard_source, install_aligner_compatibility
+from capswriter_compat import correct_aligner_guard_source, has_bad_aligner_guard, install_aligner_compatibility
 
 
 class CorrectAlignerGuardSourceTests(unittest.TestCase):
@@ -34,22 +34,40 @@ def align(self):
     def test_corrects_direct_condition_only(self) -> None:
         source = """
 def align(self):
-    if n_total * 4 > 4096:
+    if (n_total * 4) > self.max_batch_tokens:
         return None
 """
 
         corrected, count = correct_aligner_guard_source(source)
 
         self.assertEqual(count, 1)
-        self.assertIn("if n_total > 4096:", corrected)
+        self.assertIn("if n_total > self.max_batch_tokens:", corrected)
 
-    def test_leaves_correct_source_unchanged(self) -> None:
-        source = "if n_total > 4096:\n    return None\n"
+    def test_leaves_correct_guard_and_mrope_allocation_unchanged(self) -> None:
+        source = """
+def align(self):
+    if n_total > 4096:
+        print("[ALIGN SKIP]")
+    batch = llama.LlamaBatch(n_total * 4, embd_dim=1024)
+"""
 
         corrected, count = correct_aligner_guard_source(source)
 
         self.assertEqual(count, 0)
         self.assertEqual(corrected, source)
+        self.assertFalse(has_bad_aligner_guard(source))
+
+    def test_detects_unhandled_fourfold_guard_but_not_batch_capacity(self) -> None:
+        bad_source = """
+def align(self):
+    token_capacity: int = 4 * n_total
+    if token_capacity > limit:
+        return None
+"""
+        allocation_only = "batch = llama.LlamaBatch(n_total * 4, embd_dim=1024)\n"
+
+        self.assertTrue(has_bad_aligner_guard(bad_source))
+        self.assertFalse(has_bad_aligner_guard(allocation_only))
 
 
 class InstallAlignerCompatibilityTests(unittest.TestCase):

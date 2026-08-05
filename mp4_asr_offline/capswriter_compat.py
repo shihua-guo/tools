@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import inspect
 import re
 import textwrap
@@ -32,11 +33,43 @@ def correct_aligner_guard_source(source: str) -> tuple[str, int]:
         source,
     )
     corrected, condition_count = re.subn(
-        r"(\bif\s+)n_total\s*\*\s*4(\s*>\s*4096\s*:)",
+        r"(\bif\s+)\(?\s*n_total\s*\*\s*4\s*\)?(\s*>\s*[^:]+:)",
         r"\1n_total\2",
         corrected,
     )
     return corrected, assignment_count + condition_count
+
+
+def _is_fourfold_n_total(node: ast.AST) -> bool:
+    if not isinstance(node, ast.BinOp) or not isinstance(node.op, ast.Mult):
+        return False
+    operands = (node.left, node.right)
+    return any(isinstance(item, ast.Name) and item.id == "n_total" for item in operands) and any(
+        isinstance(item, ast.Constant) and item.value == 4 for item in operands
+    )
+
+
+def has_bad_aligner_guard(source: str) -> bool:
+    """Return whether an actual comparison still uses fourfold token count."""
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return False
+
+    fourfold_names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Assign, ast.AnnAssign)) and _is_fourfold_n_total(node.value):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            fourfold_names.update(target.id for target in targets if isinstance(target, ast.Name))
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Compare):
+            continue
+        if _is_fourfold_n_total(node.left):
+            return True
+        if isinstance(node.left, ast.Name) and node.left.id in fourfold_names:
+            return True
+    return False
 
 
 def _replace_bad_guard(aligner_module: ModuleType, aligner_class: type[Any]) -> bool:
@@ -47,7 +80,7 @@ def _replace_bad_guard(aligner_module: ModuleType, aligner_class: type[Any]) -> 
 
     corrected, replacement_count = correct_aligner_guard_source(source)
     if replacement_count == 0:
-        if "[ALIGN SKIP]" in source and "* 4" in source:
+        if has_bad_aligner_guard(source):
             raise RuntimeError("检测到无法自动修正的 CapsWriter Aligner 四倍 token guard")
         return False
 
