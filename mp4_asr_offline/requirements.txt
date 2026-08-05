@@ -3,4 +3,5 @@
 numpy==2.4.3
 onnxruntime==1.24.4
 pydub==0.25.1
+audioop-lts==0.2.2; python_version >= "3.13"
 gguf==0.18.0

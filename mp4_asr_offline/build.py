@@ -55,6 +55,8 @@ def main() -> None:
             "--hidden-import",
             "pydub",
             "--hidden-import",
+            "audioop",
+            "--hidden-import",
             "gguf",
             "--hidden-import",
             "srt",
