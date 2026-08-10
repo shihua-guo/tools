@@ -79,6 +79,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     search.add_argument("--limit", type=int, default=10, help="最多返回多少条结果")
     search.add_argument("--context", type=int, default=1, help="显示前后多少个片段")
+    search.add_argument(
+        "--type",
+        dest="source_type",
+        choices=("chat", "meeting", "text"),
+        help="只搜索指定来源类型",
+    )
     search.add_argument("--json", action="store_true", help="输出 JSON")
 
     stats = subparsers.add_parser("stats", help="显示索引统计")
@@ -104,7 +110,11 @@ def main(argv: list[str] | None = None) -> int:
             if args.limit < 1 or args.context < 0:
                 parser.error("--limit 必须大于 0，--context 不能小于 0")
             results = search_database(
-                args.db, args.query, limit=args.limit, context=args.context
+                args.db,
+                args.query,
+                limit=args.limit,
+                context=args.context,
+                source_type=args.source_type,
             )
             if args.json:
                 print(json.dumps(results, ensure_ascii=False, indent=2))

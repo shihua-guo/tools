@@ -185,18 +185,34 @@ def _phrase_query(
 
 
 def _search_channel(
-    connection: sqlite3.Connection, query: str, candidate_limit: int
+    connection: sqlite3.Connection,
+    query: str,
+    candidate_limit: int,
+    source_type: str | None,
 ) -> list[int]:
-    rows = connection.execute(
-        """
-        SELECT rowid
-        FROM document_fts
-        WHERE document_fts MATCH ?
-        ORDER BY bm25(document_fts)
-        LIMIT ?
-        """,
-        (query, candidate_limit),
-    ).fetchall()
+    if source_type is None:
+        rows = connection.execute(
+            """
+            SELECT rowid
+            FROM document_fts
+            WHERE document_fts MATCH ?
+            ORDER BY bm25(document_fts)
+            LIMIT ?
+            """,
+            (query, candidate_limit),
+        ).fetchall()
+    else:
+        rows = connection.execute(
+            """
+            SELECT document_fts.rowid
+            FROM document_fts
+            JOIN documents ON documents.id = document_fts.rowid
+            WHERE document_fts MATCH ? AND documents.source_type = ?
+            ORDER BY bm25(document_fts)
+            LIMIT ?
+            """,
+            (query, source_type, candidate_limit),
+        ).fetchall()
     return [int(row["rowid"]) for row in rows]
 
 
@@ -206,6 +222,7 @@ def search_database(
     *,
     limit: int = 10,
     context: int = 1,
+    source_type: str | None = None,
 ) -> list[dict[str, Any]]:
     if not query.strip():
         return []
@@ -229,7 +246,10 @@ def search_database(
             if channel_query is None:
                 continue
             for rank, document_id in enumerate(
-                _search_channel(connection, channel_query, candidate_limit), start=1
+                _search_channel(
+                    connection, channel_query, candidate_limit, source_type
+                ),
+                start=1,
             ):
                 scores[document_id] += weight / (60 + rank)
                 matched_by[document_id].append(channel_name)

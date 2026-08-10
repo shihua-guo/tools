@@ -131,6 +131,18 @@ class KnowledgeIndexTests(unittest.TestCase):
         sender_results = search_database(database, "g30076000", context=0)
         self.assertEqual("郭仕华", sender_results[0]["sender_name"])
 
+        meeting_results = search_database(
+            database, "审批", source_type="meeting", context=0
+        )
+        self.assertTrue(meeting_results)
+        self.assertTrue(
+            all(item["source_type"] == "meeting" for item in meeting_results)
+        )
+
+        chat_results = search_database(database, "迭代", source_type="chat", context=0)
+        self.assertTrue(chat_results)
+        self.assertTrue(all(item["source_type"] == "chat" for item in chat_results))
+
 
 if __name__ == "__main__":
     unittest.main()

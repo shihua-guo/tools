@@ -65,6 +65,13 @@ knowledge-search search "带宽审批" --db "D:\资料\knowledge.db" --limit 20
 
 第二个例子会同时搜索原汉字与拼音，因此可能召回包含“贷款审批”等同音内容。汉字命中的权重高于拼音命中，减少常见同音字造成的噪声。
 
+只搜索会议字幕或聊天记录：
+
+```powershell
+knowledge-search search "合并" --db knowledge.db --type meeting
+knowledge-search search "合并" --db knowledge.db --type chat
+```
+
 默认会显示命中聊天消息前后各一条消息。可以调整或关闭：
 
 ```powershell
