@@ -211,6 +211,10 @@ class JobState:
             return
         try:
             with path.open("rb") as f:
+                f.seek(0, os.SEEK_END)
+                if f.tell() < offset:
+                    # The CLI starts each run by truncating progress.jsonl.
+                    offset = 0
                 f.seek(offset)
                 data = f.read()
                 new_offset = f.tell()

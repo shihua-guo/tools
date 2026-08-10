@@ -108,7 +108,7 @@ WebUI 会生成临时配置文件并调用同目录下的 `mp4_asr_offline.py`�
 
 ## 进度文件
 
-`progress.jsonl` 位于 `output_dir` 下，每行是一条 JSON 记录，包含输入文件、输出文件、状态、百分比、chunk 进度、耗时和错误信息。
+`progress.jsonl` 位于 `output_dir` 下，每行是一条 JSON 记录，包含输入文件、输出文件、状态、百分比、chunk 进度、耗时和错误信息。每次正式运行（不含 `--dry-run`）都会先清空该文件，只保留本次运行的进度，避免长期累计占用磁盘空间。
 
 常见状态：
 

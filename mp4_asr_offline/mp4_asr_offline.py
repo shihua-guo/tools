@@ -257,6 +257,12 @@ def progress_path(cfg: AppConfig) -> Path:
     return cfg.output_dir / "progress.jsonl"
 
 
+def reset_progress(cfg: AppConfig) -> None:
+    """Start a fresh progress log for each invocation."""
+    cfg.output_dir.mkdir(parents=True, exist_ok=True)
+    progress_path(cfg).write_text("", encoding="utf-8")
+
+
 def append_progress(cfg: AppConfig, record: dict[str, Any]) -> None:
     cfg.output_dir.mkdir(parents=True, exist_ok=True)
     payload = {
@@ -613,6 +619,7 @@ def main() -> int:
             for item in files:
                 print(item)
             return 0
+        reset_progress(cfg)
         if not files:
             return 0
         failures = process_files(cfg, files)
