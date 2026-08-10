@@ -38,6 +38,24 @@ SRT_SAMPLE = """\
 这是另一个时间段
 """
 
+VARIABLE_PRECISION_SRT_SAMPLE = """\
+1
+0:00:00 --> 0:00:11,957334
+.
+
+2
+0:00:11,957334 --> 0:00:23,914667
+呃，这边这边。
+
+3
+0:00:23,914667 --> 0:00:35,872001
+。
+
+4
+0:00:35,872001 --> 0:00:47,829334
+昨天迭代测试还有问题
+"""
+
 
 class KnowledgeIndexTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -68,6 +86,15 @@ class KnowledgeIndexTests(unittest.TestCase):
         self.assertEqual(1.0, documents[0].audio_start)
         self.assertEqual(9.0, documents[0].audio_end)
         self.assertIn("规则修改", documents[0].text)
+
+    def test_srt_accepts_variable_precision_and_ignores_punctuation(self) -> None:
+        path = self.root / "2025-10-29 08-55-37.srt"
+        path.write_text(VARIABLE_PRECISION_SRT_SAMPLE, encoding="utf-8")
+        documents = list(parse_srt(path, self.root))
+        self.assertEqual(1, len(documents))
+        self.assertAlmostEqual(11.957334, documents[0].audio_start)
+        self.assertAlmostEqual(47.829334, documents[0].audio_end)
+        self.assertEqual("呃，这边这边。 昨天迭代测试还有问题", documents[0].text)
 
     def test_build_and_search_homophone(self) -> None:
         history = self.root / "HistoryRecord" / "联系人"

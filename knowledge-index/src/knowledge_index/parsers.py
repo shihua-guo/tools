@@ -11,8 +11,8 @@ _CHAT_HEADER_RE = re.compile(
     r"^(.+)\(([^()\t]+)\)[\t ]+(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s*$"
 )
 _SRT_TIME_RE = re.compile(
-    r"(?P<start>\d{1,2}:\d{2}:\d{2}[,.]\d{3})\s*-->\s*"
-    r"(?P<end>\d{1,2}:\d{2}:\d{2}[,.]\d{3})"
+    r"(?P<start>\d{1,2}:\d{2}:\d{2}(?:[,.]\d{1,6})?)\s*-->\s*"
+    r"(?P<end>\d{1,2}:\d{2}:\d{2}(?:[,.]\d{1,6})?)"
 )
 _HTML_TAG_RE = re.compile(r"<[^>]+>")
 
@@ -113,7 +113,9 @@ def _srt_cues(content: str) -> Iterator[tuple[float, float, str]]:
             line.strip() for line in lines[time_index + 1 :] if line.strip()
         )
         text = html.unescape(_HTML_TAG_RE.sub("", text)).strip()
-        if text:
+        # Some ASR exports fill silent windows with only "." or "。". They
+        # carry no searchable information and otherwise dominate the index.
+        if text and any(character.isalnum() for character in text):
             yield (
                 _parse_srt_timestamp(match.group("start")),
                 _parse_srt_timestamp(match.group("end")),
