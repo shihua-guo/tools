@@ -85,6 +85,12 @@ def build_parser() -> argparse.ArgumentParser:
         choices=("chat", "meeting", "text"),
         help="只搜索指定来源类型",
     )
+    search.add_argument(
+        "--and",
+        dest="match_all",
+        action="store_true",
+        help="要求每个空格分隔的关键词都命中",
+    )
     search.add_argument("--json", action="store_true", help="输出 JSON")
 
     stats = subparsers.add_parser("stats", help="显示索引统计")
@@ -115,6 +121,7 @@ def main(argv: list[str] | None = None) -> int:
                 limit=args.limit,
                 context=args.context,
                 source_type=args.source_type,
+                match_all=args.match_all,
             )
             if args.json:
                 print(json.dumps(results, ensure_ascii=False, indent=2))

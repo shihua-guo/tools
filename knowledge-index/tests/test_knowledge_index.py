@@ -27,7 +27,7 @@ CONTACT_SAMPLE = """\
 SRT_SAMPLE = """\
 1
 00:00:01,000 --> 00:00:05,000
-这次讨论贷款审批流程
+这次讨论贷款审批流程，墨西哥取消与郝杰对接
 
 2
 00:00:06,000 --> 00:00:09,000
@@ -142,6 +142,26 @@ class KnowledgeIndexTests(unittest.TestCase):
         chat_results = search_database(database, "迭代", source_type="chat", context=0)
         self.assertTrue(chat_results)
         self.assertTrue(all(item["source_type"] == "chat" for item in chat_results))
+
+        and_results = search_database(
+            database,
+            "墨西哥 取消 对接 haojie",
+            source_type="meeting",
+            match_all=True,
+            context=0,
+        )
+        self.assertEqual(1, len(and_results))
+        self.assertIn("郝杰", and_results[0]["text"])
+        self.assertEqual(["and"], and_results[0]["matched_by"])
+
+        no_and_results = search_database(
+            database,
+            "墨西哥 不存在",
+            source_type="meeting",
+            match_all=True,
+            context=0,
+        )
+        self.assertEqual([], no_and_results)
 
 
 if __name__ == "__main__":

@@ -175,6 +175,15 @@ def _or_query(column: str, tokens: tuple[str, ...], *, limit: int = 32) -> str |
     return f"{column} : (" + " OR ".join(_quoted_token(token) for token in unique) + ")"
 
 
+def _and_query(column: str, tokens: tuple[str, ...], *, limit: int = 32) -> str | None:
+    unique = tuple(dict.fromkeys(token for token in tokens if token))[:limit]
+    if not unique:
+        return None
+    return (
+        f"{column} : (" + " AND ".join(_quoted_token(token) for token in unique) + ")"
+    )
+
+
 def _phrase_query(
     column: str, tokens: tuple[str, ...], *, limit: int = 24
 ) -> str | None:
@@ -182,6 +191,24 @@ def _phrase_query(
     if not tokens:
         return None
     return f"{column} : " + _quoted_token(" ".join(tokens))
+
+
+def _all_terms_query(query: str) -> str | None:
+    term_queries: list[str] = []
+    for term in dict.fromkeys(query.split()):
+        channel_queries = tuple(
+            channel_query
+            for channel_query in (
+                _and_query("words", word_tokens(term)),
+                _and_query("char_bigrams", char_bigram_tokens(term)),
+                _phrase_query("pinyin_full", full_pinyin_tokens(term)),
+                _or_query("pinyin_initials", pinyin_initial_tokens(term)),
+            )
+            if channel_query is not None
+        )
+        if channel_queries:
+            term_queries.append("(" + " OR ".join(channel_queries) + ")")
+    return " AND ".join(term_queries) if term_queries else None
 
 
 def _search_channel(
@@ -223,6 +250,7 @@ def search_database(
     limit: int = 10,
     context: int = 1,
     source_type: str | None = None,
+    match_all: bool = False,
 ) -> list[dict[str, Any]]:
     if not query.strip():
         return []
@@ -242,17 +270,29 @@ def search_database(
 
     connection = _connect(database)
     try:
-        for channel_name, weight, channel_query in channels:
-            if channel_query is None:
-                continue
-            for rank, document_id in enumerate(
-                _search_channel(
-                    connection, channel_query, candidate_limit, source_type
-                ),
-                start=1,
-            ):
-                scores[document_id] += weight / (60 + rank)
-                matched_by[document_id].append(channel_name)
+        if match_all:
+            all_terms_query = _all_terms_query(query)
+            if all_terms_query is not None:
+                for rank, document_id in enumerate(
+                    _search_channel(
+                        connection, all_terms_query, candidate_limit, source_type
+                    ),
+                    start=1,
+                ):
+                    scores[document_id] = 10.0 / (60 + rank)
+                    matched_by[document_id].append("and")
+        else:
+            for channel_name, weight, channel_query in channels:
+                if channel_query is None:
+                    continue
+                for rank, document_id in enumerate(
+                    _search_channel(
+                        connection, channel_query, candidate_limit, source_type
+                    ),
+                    start=1,
+                ):
+                    scores[document_id] += weight / (60 + rank)
+                    matched_by[document_id].append(channel_name)
 
         ranked_ids = sorted(
             scores, key=lambda document_id: (-scores[document_id], document_id)

@@ -72,6 +72,13 @@ knowledge-search search "合并" --db knowledge.db --type meeting
 knowledge-search search "合并" --db knowledge.db --type chat
 ```
 
+要求多个关键词全部出现在同一片段中，使用 `--and`。关键词以空格分隔，
+每个关键词可以通过汉字或拼音命中：
+
+```powershell
+knowledge-search search "墨西哥 取消 对接 haojie" --db knowledge.db --type meeting --and
+```
+
 默认会显示命中聊天消息前后各一条消息。可以调整或关闭：
 
 ```powershell
