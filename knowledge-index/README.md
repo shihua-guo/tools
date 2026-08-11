@@ -45,6 +45,23 @@ knowledge-search build "D:\资料\HistoryRecord" "D:\资料\会议转写" --db "
 
 每次 `build` 都会在临时数据库中完整重建索引，成功后再替换旧数据库，因此中途失败不会破坏已有索引。
 
+## 交互菜单
+
+直接运行命令会打开带预设选项的菜单，适合不想记命令参数时使用：
+
+```powershell
+knowledge-search
+```
+
+也可以预先指定数据库、结果数和上下文条数：
+
+```powershell
+knowledge-search interactive --db "D:\资料\knowledge.db" --limit 20 --context 2
+```
+
+菜单提供建立或重建索引、搜索全部来源、只搜索聊天记录、只搜索会议字幕、
+多关键词全部命中（AND）和查看索引统计。原有的命令行子命令保持不变。
+
 支持的聊天消息格式：
 
 ```text

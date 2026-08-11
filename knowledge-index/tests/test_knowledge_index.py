@@ -3,7 +3,9 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
+from knowledge_index.cli import main
 from knowledge_index.database import build_database, database_stats, search_database
 from knowledge_index.parsers import parse_chat, parse_srt
 
@@ -162,6 +164,30 @@ class KnowledgeIndexTests(unittest.TestCase):
             context=0,
         )
         self.assertEqual([], no_and_results)
+
+    def test_interactive_menu_search_preset(self) -> None:
+        database = self.root / "knowledge.db"
+        with (
+            patch("knowledge_index.cli.input", side_effect=["3", "迭代", "0"]),
+            patch("knowledge_index.cli.search_database", return_value=[]) as search,
+        ):
+            self.assertEqual(0, main(["interactive", "--db", str(database)]))
+
+        search.assert_called_once_with(
+            database,
+            "迭代",
+            limit=10,
+            context=1,
+            source_type="chat",
+            match_all=False,
+        )
+
+    def test_no_arguments_opens_interactive_menu(self) -> None:
+        with (
+            patch("knowledge_index.cli.sys.argv", ["knowledge-search"]),
+            patch("knowledge_index.cli.input", return_value="0"),
+        ):
+            self.assertEqual(0, main())
 
 
 if __name__ == "__main__":
