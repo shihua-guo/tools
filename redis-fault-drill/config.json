@@ -1,0 +1,16 @@
+{
+  "name": "N150 Redis 5 cluster",
+  "host": "192.168.2.126",
+  "ssh_host": "root@192.168.2.126",
+  "ssh_identity": "~/.ssh/id_ed25519",
+  "password_file": "/opt/stacks/redis-cluster/.env",
+  "state_dir": "/opt/stacks/redis-cluster/fault-drill",
+  "nodes": [
+    {"port": 7001, "container": "n150-redis-7001"},
+    {"port": 7002, "container": "n150-redis-7002"},
+    {"port": 7003, "container": "n150-redis-7003"},
+    {"port": 7004, "container": "n150-redis-7004"},
+    {"port": 7005, "container": "n150-redis-7005"},
+    {"port": 7006, "container": "n150-redis-7006"}
+  ]
+}
