@@ -8,3 +8,7 @@ mp4_asr_offline/test/
 # Large installer archives (published via GitHub Releases)
 claude-mem-offline-installer.zip
 claude-mem-offline-installer.tar.gz
+claude-code-desktop-offline-installer.zip
+claude-code-desktop-offline-installer/packages/*.msix
+claude-code-desktop-offline-installer/bin/windows-x64/claude.exe
+

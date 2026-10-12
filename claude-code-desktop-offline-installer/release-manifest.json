@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-12T16:00:00Z",
+  "component": "claude-code-desktop-offline-installer",
+  "versions": {
+    "claudeDesktop": "2.31226.1",
+    "claudeCode": "2.1.286"
+  },
+  "packages": {
+    "Claude-win-x64.msix": {
+      "fileName": "Claude-win-x64.msix",
+      "version": "2.31226.1",
+      "platform": "win32",
+      "arch": "x64",
+      "format": "msix",
+      "contentLength": 294300862,
+      "sha256": "ecd354206b5f00c4a7b47e15f4779be8e7385e7074e2ca4a8424a8adac75abd3",
+      "upstreamUrl": "https://downloads.claude.ai/releases/win32/x64/2.31226.1/Claude-8576520051724193e9f74fc538f9ce8125e9ddd2.msix",
+      "mirrorUrl": "https://claudeapp.agentsmirror.com/latest/win-x64"
+    },
+    "claude.exe": {
+      "fileName": "claude.exe",
+      "version": "2.1.286",
+      "platform": "win32",
+      "arch": "x64",
+      "format": "exe",
+      "contentLength": 245092000,
+      "description": "Claude Code CLI standalone executable"
+    }
+  }
+}

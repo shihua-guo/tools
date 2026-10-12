@@ -1,0 +1,2 @@
+ecd354206b5f00c4a7b47e15f4779be8e7385e7074e2ca4a8424a8adac75abd3  packages/Claude-win-x64.msix
+0b6ecec8edef1ce3069682f696c894d1553239faa6b84e56e167a3ced88fa333  bin/windows-x64/claude.exe
